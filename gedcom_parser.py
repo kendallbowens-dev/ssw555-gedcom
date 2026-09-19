@@ -61,6 +61,16 @@ def main():
 
     gedcom_path = sys.argv[1]
 
+    # storage 
+    individuals = {}
+    families ={}
+
+    # current individual
+    person = ""
+
+    # current family 
+    family = ""
+
     with open(gedcom_path, "r") as gedcom_file:
         for raw_line in gedcom_file:
             line = raw_line.rstrip("\n").rstrip("\r")
@@ -71,6 +81,43 @@ def main():
             level, tag, arguments = parse_line(line)
             valid = "Y" if (level, tag) in VALID_TAGS else "N"
             print(f"<-- {level}|{tag}|{valid}|{arguments}")
+
+            # individuals IDs
+            if tag == "INDI":
+                individual_id = arguments
+                individuals[individual_id] = {}
+                individuals[individual_id]["name"] = ""
+                person = individual_id
+                
+            # families IDs
+            elif tag == "FAM":
+                family_id = arguments
+                families[family_id] = {}
+                families[family_id]["wife"] = ""
+                families[family_id]["husband"] = ""
+                family = family_id
+
+            # saves current individual ID
+            elif tag == "NAME":
+                individuals[person]["name"] = arguments
+
+            # saves husand ID
+            elif tag == "HUSB":
+                families[family]["husband"] = arguments
+
+            # saves wife ID
+            elif tag == "WIFE":
+                families[family]["wife"] = arguments
+
+    for person_id in sorted(individuals):
+        print(person_id, individuals[person_id]["name"])
+
+    for family_id in sorted(families):
+        husband = families[family_id]["husband"]
+        wife = families[family_id]["wife"]
+        print(family_id)
+        print(husband, individuals[husband]["name"])
+        print(wife, individuals[wife]["name"])
 
 
 if __name__ == "__main__":
