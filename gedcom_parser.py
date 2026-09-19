@@ -115,7 +115,7 @@ def main():
     for family_id in sorted(families):
         husband = families[family_id]["husband"]
         wife = families[family_id]["wife"]
-        print(family_id)
+        print(family_id) # added so its not all bundled up 
         print(husband, individuals[husband]["name"])
         print(wife, individuals[wife]["name"])
 
