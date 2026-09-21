@@ -87,6 +87,70 @@ def format_id_set(ids):
     return "{" + ", ".join(f"'{i}'" for i in sorted(ids, key=sort_key)) + "}"
 
 
+def check_us01_dates_before_today(individuals, families):
+    errors = []
+    today = date.today()
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if indi["birth"] and indi["birth"] > today:
+            errors.append(f"ERROR: INDIVIDUAL: US01: {indi_id}: Birthday {format_date(indi['birth'])} occurs after the current date")
+        if indi["death"] and indi["death"] > today:
+            errors.append(f"ERROR: INDIVIDUAL: US01: {indi_id}: Death date {format_date(indi['death'])} occurs after the current date")
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if fam["married"] and fam["married"] > today:
+            errors.append(f"ERROR: FAMILY: US01: {fam_id}: Married date {format_date(fam['married'])} occurs after the current date")
+        if fam["divorced"] and fam["divorced"] > today:
+            errors.append(f"ERROR: FAMILY: US01: {fam_id}: Divorced date {format_date(fam['divorced'])} occurs after the current date")
+    return errors
+
+
+def check_us02_birth_before_marriage(individuals, families):
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["fams"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam or not fam["married"]:
+                continue
+            if indi["birth"] > fam["married"]:
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US02: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs after marriage date {format_date(fam['married'])} in family {fam_id}"
+                )
+    return errors
+
+
+def check_us03_birth_before_death(individuals):
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["death"] or not indi["birth"]:
+            continue
+        if indi["birth"] > indi["death"]:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US03: {indi_id}: Birthday {format_date(indi['birth'])} "
+                f"occurs after death date {format_date(indi['death'])}"
+            )
+    return errors
+
+
+def check_us04_marriage_before_divorce(families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["divorced"] or not fam["married"]:
+            continue
+        if fam["married"] > fam["divorced"]:
+            errors.append(
+                f"ERROR: FAMILY: US04: {fam_id}: Married date {format_date(fam['married'])} "
+                f"occurs after divorced date {format_date(fam['divorced'])}"
+            )
+    return errors
+
+
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
     for row in rows:
@@ -227,6 +291,17 @@ def main():
             format_id_set(fam["children"]),
         ])
     print_table("Families", fam_headers, fam_rows)
+
+    errors = []
+    errors.extend(check_us01_dates_before_today(individuals, families))
+    errors.extend(check_us02_birth_before_marriage(individuals, families))
+    errors.extend(check_us03_birth_before_death(individuals))
+    errors.extend(check_us04_marriage_before_divorce(families))
+
+    if errors:
+        print("\nValidation Errors")
+        for error in errors:
+            print(error)
 
 
 if __name__ == "__main__":
