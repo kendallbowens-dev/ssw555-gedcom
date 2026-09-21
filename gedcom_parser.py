@@ -1,5 +1,5 @@
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 VALID_TAGS = {
     (0, "INDI"),
@@ -68,6 +68,20 @@ def parse_gedcom_date(date_str):
         return datetime.strptime(date_str, "%d %b %Y").date()
     except ValueError:
         return None
+
+
+def add_months(d, months):
+    # Return the date `months` months after d, clamping the day to the
+    # last valid day of the target month (used for the 9-month rules).
+    month_index = d.month - 1 + months
+    year = d.year + month_index // 12
+    month = month_index % 12 + 1
+    if month == 12:
+        next_month_first = date(year + 1, 1, 1)
+    else:
+        next_month_first = date(year, month + 1, 1)
+    last_day = (next_month_first - timedelta(days=1)).day
+    return date(year, month, min(d.day, last_day))
 
 
 def format_date(d):
@@ -151,6 +165,58 @@ def check_us04_marriage_before_divorce(families):
     return errors
 
 
+def check_us08_birth_before_parents_marriage(individuals, families):
+    # US08: a child should be born after the parents' marriage and not more
+    # than 9 months after their divorce.
+    anomalies = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["famc"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam:
+                continue
+            if fam["married"] and indi["birth"] < fam["married"]:
+                anomalies.append(
+                    f"ANOMALY: INDIVIDUAL: US08: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs before marriage date {format_date(fam['married'])} of parents in family {fam_id}"
+                )
+            if fam["divorced"] and indi["birth"] > add_months(fam["divorced"], 9):
+                anomalies.append(
+                    f"ANOMALY: INDIVIDUAL: US08: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs more than 9 months after divorce date {format_date(fam['divorced'])} of parents in family {fam_id}"
+                )
+    return anomalies
+
+
+def check_us09_birth_before_parents_death(individuals, families):
+    # US09: a child should be born before the mother's death and before
+    # 9 months after the father's death.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["famc"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam:
+                continue
+            mother = individuals.get(fam["wife"])
+            father = individuals.get(fam["husband"])
+            if mother and mother["death"] and indi["birth"] > mother["death"]:
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US09: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs after death date {format_date(mother['death'])} of mother {fam['wife']} in family {fam_id}"
+                )
+            if father and father["death"] and indi["birth"] > add_months(father["death"], 9):
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US09: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs more than 9 months after death date {format_date(father['death'])} of father {fam['husband']} in family {fam_id}"
+                )
+    return errors
+
+
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
     for row in rows:
@@ -178,9 +244,6 @@ def main():
     individuals = {}
     families = {}
 
-    # current individual and family being filled in, plus the
-    # level-1 tag they're currently under (needed to know whether a
-    # level-2 DATE belongs to BIRT/DEAT or MARR/DIV)
     person = ""
     family = ""
     last_level1_tag = ""
@@ -196,7 +259,6 @@ def main():
             valid = "Y" if (level, tag) in VALID_TAGS else "N"
             print(f"<-- {level}|{tag}|{valid}|{arguments}")
 
-            # individuals IDs
             if level == 0 and tag == "INDI":
                 individual_id = arguments
                 individuals[individual_id] = {
@@ -210,7 +272,6 @@ def main():
                 person = individual_id
                 family = ""
 
-            # families IDs
             elif level == 0 and tag == "FAM":
                 family_id = arguments
                 families[family_id] = {
@@ -297,6 +358,8 @@ def main():
     errors.extend(check_us02_birth_before_marriage(individuals, families))
     errors.extend(check_us03_birth_before_death(individuals))
     errors.extend(check_us04_marriage_before_divorce(families))
+    errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
+    errors.extend(check_us09_birth_before_parents_death(individuals, families))
 
     if errors:
         print("\nValidation Errors")
