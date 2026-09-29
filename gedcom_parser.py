@@ -165,6 +165,118 @@ def check_us04_marriage_before_divorce(families):
     return errors
 
 
+# Alexis 
+def check_us05_marriage_before_death(individuals, families):
+
+    errors = []
+
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+
+        if not fam["married"]:
+            continue
+
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+
+        if husband:
+            if husband["death"]:
+                if fam["married"] > husband["death"]:
+                    errors.append(
+                        "ERROR: FAMILY: US05: " + fam_id +
+                        ": Marriage date " + format_date(fam["married"]) +
+                        " occurs after death date " + format_date(husband["death"]) +
+                        " of husband " + fam["husband"]
+                    )
+
+        if wife:
+            if wife["death"]:
+                if fam["married"] > wife["death"]:
+                    errors.append(
+                        "ERROR: FAMILY: US05: " + fam_id +
+                        ": Marriage date " + format_date(fam["married"]) +
+                        " occurs after death date " + format_date(wife["death"]) +
+                        " of wife " + fam["wife"]
+                    )
+    return errors
+
+
+# Alexis
+def check_us06_divorce_before_death(individuals, families):
+
+    errors = []
+
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+
+        if not fam["divorced"]:
+            continue
+
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+
+        if husband:       
+            if husband["death"]:
+                if fam["divorced"] > husband["death"]:
+                    errors.append(
+                        "ERROR: FAMILY: US06: " + fam_id +
+                        ": Divorce date " + format_date(fam["divorced"]) +
+                        " occurs after death date " + format_date(husband["death"]) +
+                        " of husband " + fam["husband"]
+                    )
+
+        if wife:       
+            if wife["death"]:
+                if fam["divorced"] > wife["death"]:
+                    errors.append(
+                        "ERROR: FAMILY: US06: " + fam_id +
+                        ": Divorce date " + format_date(fam["divorced"]) +
+                        " occurs after death date " + format_date(wife["death"]) +
+                        " of wife " + fam["wife"]
+                    )
+    return errors
+
+
+def check_us07_less_than_150(individuals, today=None):
+    """US07: flag people who have reached their 150th birthday."""
+    errors = []
+    current_date = today if today is not None else date.today()
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        birth = indi["birth"]
+        if not birth:
+            continue
+        end = indi["death"] if indi["death"] else current_date
+        if compute_age(birth, end) >= 150:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US07: {indi_id}: Age at "
+                f"{'death' if indi['death'] else 'current date'} is 150 years or more "
+                f"(birth {format_date(birth)}, end {format_date(end)})"
+            )
+    return errors
+
+
+def check_us21_correct_gender(individuals, families):
+    """US21: apply the course's HUSB=M and WIFE=F validation rule."""
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        for role, key, expected in (("HUSB", "husband", "M"), ("WIFE", "wife", "F")):
+            indi_id = fam[key]
+            indi = individuals.get(indi_id)
+            if indi and indi["sex"] != expected:
+                errors.append(
+                    f"ERROR: FAMILY: US21: {fam_id}: {role} {indi_id} "
+                    f"has SEX {indi['sex'] or 'NA'}, expected {expected}"
+                )
+    return errors
+
+
+            
+          
+
+
+
 def check_us08_birth_before_parents_marriage(individuals, families):
     # US08: a child should be born after the parents' marriage and not more
     # than 9 months after their divorce.
@@ -216,47 +328,6 @@ def check_us09_birth_before_parents_death(individuals, families):
                 )
     return errors
 
-
-def check_us07_less_than_150(individuals):
-    # US07: death (or the current date, for the living) should be less
-    # than 150 years after birth.
-    errors = []
-    for indi_id in sorted(individuals, key=sort_key):
-        indi = individuals[indi_id]
-        if not indi["birth"]:
-            continue
-        age = compute_age(indi["birth"], indi["death"])
-        if age >= 150:
-            if indi["death"]:
-                errors.append(
-                    f"ERROR: INDIVIDUAL: US07: {indi_id}: Death date {format_date(indi['death'])} "
-                    f"occurs 150 or more years after birthday {format_date(indi['birth'])}"
-                )
-            else:
-                errors.append(
-                    f"ERROR: INDIVIDUAL: US07: {indi_id}: Current date occurs 150 or more years "
-                    f"after birthday {format_date(indi['birth'])}"
-                )
-    return errors
-
-def check_us21_correct_gender_for_role(individuals, families):
-    # US21: husband in a family should be male, wife should be female.
-    errors = []
-    for fam_id in sorted(families, key=sort_key):
-        fam = families[fam_id]
-        husband = individuals.get(fam["husband"])
-        wife = individuals.get(fam["wife"])
-        if husband and husband["sex"] != "M":
-            errors.append(
-                f"ERROR: FAMILY: US21: {fam_id}: Husband {fam['husband']} has gender "
-                f"'{husband['sex']}', expected 'M'"
-            )
-        if wife and wife["sex"] != "F":
-            errors.append(
-                f"ERROR: FAMILY: US21: {fam_id}: Wife {fam['wife']} has gender "
-                f"'{wife['sex']}', expected 'F'"
-            )
-    return errors
 
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
@@ -399,10 +470,12 @@ def main():
     errors.extend(check_us02_birth_before_marriage(individuals, families))
     errors.extend(check_us03_birth_before_death(individuals))
     errors.extend(check_us04_marriage_before_divorce(families))
+    errors.extend(check_us05_marriage_before_death(individuals, families))
+    errors.extend(check_us06_divorce_before_death(individuals, families))
+    errors.extend(check_us07_less_than_150(individuals))
     errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
-    errors.extend(check_us07_less_than_150(individuals))
-    errors.extend(check_us21_correct_gender_for_role(individuals, families))
+    errors.extend(check_us21_correct_gender(individuals, families))
 
     if errors:
         print("\nValidation Errors")
