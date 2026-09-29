@@ -239,7 +239,24 @@ def check_us07_less_than_150(individuals):
                 )
     return errors
 
-
+def check_us21_correct_gender_for_role(individuals, families):
+    # US21: husband in a family should be male, wife should be female.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        if husband and husband["sex"] != "M":
+            errors.append(
+                f"ERROR: FAMILY: US21: {fam_id}: Husband {fam['husband']} has gender "
+                f"'{husband['sex']}', expected 'M'"
+            )
+        if wife and wife["sex"] != "F":
+            errors.append(
+                f"ERROR: FAMILY: US21: {fam_id}: Wife {fam['wife']} has gender "
+                f"'{wife['sex']}', expected 'F'"
+            )
+    return errors
 
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
