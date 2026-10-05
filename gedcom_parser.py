@@ -349,6 +349,18 @@ def check_us11_no_bigamy(individuals, families):
                     )
     return errors
 
+def check_us15_fewer_than_15_siblings(families):
+    # US15: there should be fewer than 15 siblings in a family.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        num_siblings = len(fam["children"])
+        if num_siblings >= 15:
+            errors.append(
+                f"ERROR: FAMILY: US15: {fam_id}: Family has {num_siblings} siblings, which is 15 or more"
+            )
+    return errors
+
 
 # US21 (Kendall)
 def check_us21_correct_gender(individuals, families):
@@ -514,6 +526,7 @@ def main():
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
     errors.extend(check_us10_marriage_after_14(individuals, families))
     errors.extend(check_us11_no_bigamy(individuals, families))
+    errors.extend(check_us15_fewer_than_15_siblings(families))
     errors.extend(check_us21_correct_gender(individuals, families))
 
     if errors:
