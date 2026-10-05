@@ -309,6 +309,47 @@ def check_us10_marriage_after_14(individuals, families):
     return errors
 
 
+def marriage_end(fam, individuals):
+    # The date a marriage stops blocking a new one: the divorce date, or
+    # else the earlier spouse's death date, or None if still ongoing.
+    if fam["divorced"]:
+        return fam["divorced"]
+    end = None
+    for spouse_id in (fam["husband"], fam["wife"]):
+        spouse = individuals.get(spouse_id)
+        if spouse and spouse["death"]:
+            end = spouse["death"] if end is None else min(end, spouse["death"])
+    return end
+
+
+def check_us11_no_bigamy(individuals, families):
+    # US11: a marriage should not occur while either spouse is already
+    # married to someone else.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        intervals = []
+        for fam_id in sorted(indi["fams"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam or not fam["married"]:
+                continue
+            intervals.append((fam_id, fam["married"], marriage_end(fam, individuals)))
+
+        for i in range(len(intervals)):
+            for j in range(i + 1, len(intervals)):
+                fam_a, start_a, end_a = intervals[i]
+                fam_b, start_b, end_b = intervals[j]
+                open_end_a = end_a if end_a else date.max
+                open_end_b = end_b if end_b else date.max
+                if start_a < open_end_b and start_b < open_end_a:
+                    errors.append(
+                        f"ERROR: INDIVIDUAL: US11: {indi_id}: Marriage to family {fam_a} "
+                        f"({format_date(start_a)} - {format_date(end_a)}) overlaps marriage to "
+                        f"family {fam_b} ({format_date(start_b)} - {format_date(end_b)})"
+                    )
+    return errors
+
+
 # US21 (Kendall)
 def check_us21_correct_gender(individuals, families):
     # US21: the husband in a family must be male and the wife must be female.
@@ -472,6 +513,7 @@ def main():
     errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
     errors.extend(check_us10_marriage_after_14(individuals, families))
+    errors.extend(check_us11_no_bigamy(individuals, families))
     errors.extend(check_us21_correct_gender(individuals, families))
 
     if errors:
