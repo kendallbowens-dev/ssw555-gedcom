@@ -1,0 +1,165 @@
+--> 0 NOTE GitHub repository: https://github.com/kendallbowens-dev/ssw555-gedcom
+<-- 0|NOTE|Y|GitHub repository: https://github.com/kendallbowens-dev/ssw555-gedcom
+--> 0 I01 INDI
+<-- 0|INDI|Y|I01
+--> 1 NAME Harvey /Bowens/
+<-- 1|NAME|Y|Harvey /Bowens/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 4 FEB 1942
+<-- 2|DATE|Y|4 FEB 1942
+--> 1 DEAT
+<-- 1|DEAT|Y|
+--> 2 DATE 9 JUL 1975
+<-- 2|DATE|Y|9 JUL 1975
+--> 1 FAMS F01
+<-- 1|FAMS|Y|F01
+--> 0 I02 INDI
+<-- 0|INDI|Y|I02
+--> 1 NAME Miriam /Bowens/
+<-- 1|NAME|Y|Miriam /Bowens/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 17 OCT 1942
+<-- 2|DATE|Y|17 OCT 1942
+--> 1 FAMS F01
+<-- 1|FAMS|Y|F01
+--> 1 FAMS F02
+<-- 1|FAMS|Y|F02
+--> 0 I03 INDI
+<-- 0|INDI|Y|I03
+--> 1 NAME John /Howard/
+<-- 1|NAME|Y|John /Howard/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 12 MAY 1944
+<-- 2|DATE|Y|12 MAY 1944
+--> 1 FAMS F02
+<-- 1|FAMS|Y|F02
+--> 0 I04 INDI
+<-- 0|INDI|Y|I04
+--> 1 NAME Yaton /Bowens/
+<-- 1|NAME|Y|Yaton /Bowens/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 7 JAN 1973
+<-- 2|DATE|Y|7 JAN 1973
+--> 1 FAMC F01
+<-- 1|FAMC|Y|F01
+--> 1 FAMS F03
+<-- 1|FAMS|Y|F03
+--> 0 I05 INDI
+<-- 0|INDI|Y|I05
+--> 1 NAME Orlando /Howard/
+<-- 1|NAME|Y|Orlando /Howard/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 3 SEP 1982
+<-- 2|DATE|Y|3 SEP 1982
+--> 1 FAMC F02
+<-- 1|FAMC|Y|F02
+--> 0 I06 INDI
+<-- 0|INDI|Y|I06
+--> 1 NAME Crystal /Yancy/
+<-- 1|NAME|Y|Crystal /Yancy/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 3 APR 1969
+<-- 2|DATE|Y|3 APR 1969
+--> 1 FAMS F03
+<-- 1|FAMS|Y|F03
+--> 0 I07 INDI
+<-- 0|INDI|Y|I07
+--> 1 NAME Kendall /Bowens/
+<-- 1|NAME|Y|Kendall /Bowens/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 26 NOV 1998
+<-- 2|DATE|Y|26 NOV 1998
+--> 1 FAMC F03
+<-- 1|FAMC|Y|F03
+--> 0 I08 INDI
+<-- 0|INDI|Y|I08
+--> 1 NAME Sydney /Bowens/
+<-- 1|NAME|Y|Sydney /Bowens/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 6 AUG 2003
+<-- 2|DATE|Y|6 AUG 2003
+--> 1 FAMC F03
+<-- 1|FAMC|Y|F03
+--> 0 F01 FAM
+<-- 0|FAM|Y|F01
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 4 MAR 1970
+<-- 2|DATE|Y|4 MAR 1970
+--> 1 HUSB I01
+<-- 1|HUSB|Y|I01
+--> 1 WIFE I02
+<-- 1|WIFE|Y|I02
+--> 1 CHIL I04
+<-- 1|CHIL|Y|I04
+--> 0 F02 FAM
+<-- 0|FAM|Y|F02
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 15 JUN 1980
+<-- 2|DATE|Y|15 JUN 1980
+--> 1 HUSB I03
+<-- 1|HUSB|Y|I03
+--> 1 WIFE I02
+<-- 1|WIFE|Y|I02
+--> 1 CHIL I05
+<-- 1|CHIL|Y|I05
+--> 0 F03 FAM
+<-- 0|FAM|Y|F03
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 27 JUN 1998
+<-- 2|DATE|Y|27 JUN 1998
+--> 1 HUSB I04
+<-- 1|HUSB|Y|I04
+--> 1 WIFE I06
+<-- 1|WIFE|Y|I06
+--> 1 CHIL I07
+<-- 1|CHIL|Y|I07
+--> 1 CHIL I08
+<-- 1|CHIL|Y|I08
+--> 0 TRLR
+<-- 0|TRLR|Y|
+
+Individuals
+ID  | Name             | Gender | Birthday   | Age | Alive | Death      | Child   | Spouse        
+----+------------------+--------+------------+-----+-------+------------+---------+---------------
+I01 | Harvey /Bowens/  | M      | 1942-02-04 | 33  | False | 1975-07-09 | NA      | {'F01'}       
+I02 | Miriam /Bowens/  | F      | 1942-10-17 | 83  | True  | NA         | NA      | {'F01', 'F02'}
+I03 | John /Howard/    | M      | 1944-05-12 | 82  | True  | NA         | NA      | {'F02'}       
+I04 | Yaton /Bowens/   | M      | 1973-01-07 | 53  | True  | NA         | {'F01'} | {'F03'}       
+I05 | Orlando /Howard/ | M      | 1982-09-03 | 44  | True  | NA         | {'F02'} | NA            
+I06 | Crystal /Yancy/  | F      | 1969-04-03 | 57  | True  | NA         | NA      | {'F03'}       
+I07 | Kendall /Bowens/ | F      | 1998-11-26 | 27  | True  | NA         | {'F03'} | NA            
+I08 | Sydney /Bowens/  | F      | 2003-08-06 | 23  | True  | NA         | {'F03'} | NA            
+
+Families
+ID  | Married    | Divorced | Husband ID | Husband Name    | Wife ID | Wife Name       | Children      
+----+------------+----------+------------+-----------------+---------+-----------------+---------------
+F01 | 1970-03-04 | NA       | I01        | Harvey /Bowens/ | I02     | Miriam /Bowens/ | {'I04'}       
+F02 | 1980-06-15 | NA       | I03        | John /Howard/   | I02     | Miriam /Bowens/ | {'I05'}       
+F03 | 1998-06-27 | NA       | I04        | Yaton /Bowens/  | I06     | Crystal /Yancy/ | {'I07', 'I08'}

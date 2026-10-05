@@ -216,6 +216,42 @@ def check_us09_birth_before_parents_death(individuals, families):
                 )
     return errors
 
+def check_us07_less_than_150(individuals):
+    # US07: a person's age should be less than 150 years.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        age = compute_age(indi["birth"], indi["death"])
+        if age != "NA" and age >= 150:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US07: {indi_id}: Age {age} is 150 or more "
+                f"(birth date {format_date(indi['birth'])})"
+            )
+    return errors
+
+
+def check_us10_marriage_after_14(individuals, families):
+    # US10: a marriage should occur at least 14 years after the birth of both spouses.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["married"]:
+            continue
+        for role, spouse_id in (("husband", fam["husband"]), ("wife", fam["wife"])):
+            spouse = individuals.get(spouse_id)
+            if not spouse or not spouse["birth"]:
+                continue
+            # 14 years == 168 months; reuse the existing add_months helper
+            if fam["married"] < add_months(spouse["birth"], 168):
+                errors.append(
+                    f"ERROR: FAMILY: US10: {fam_id}: Married date {format_date(fam['married'])} "
+                    f"is less than 14 years after the {role} ({spouse_id}) birth date "
+                    f"{format_date(spouse['birth'])}"
+                )
+    return errors
+
 
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
@@ -359,7 +395,9 @@ def main():
     errors.extend(check_us03_birth_before_death(individuals))
     errors.extend(check_us04_marriage_before_divorce(families))
     errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
+    errors.extend(check_us07_less_than_150(individuals))
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
+    errors.extend(check_us10_marriage_after_14(individuals, families))
 
     if errors:
         print("\nValidation Errors")
