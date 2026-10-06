@@ -349,6 +349,36 @@ def check_us11_no_bigamy(individuals, families):
                     )
     return errors
 
+
+# Alexi: solo
+def check_us14_multiple_births(people, families):
+    errors = []
+
+    # families
+    for fam_id in sorted(families, key=sort_key):
+        children = families[fam_id]["children"]
+
+        # children
+        for child_id in children:
+            birthday = people[child_id]["birth"]
+            count = 0
+
+            # birthday
+            for other_child_id in children:
+                other_birthday = people[other_child_id]["birth"]
+
+                if birthday == other_birthday:
+                    count = count + 1
+
+            if count > 5:
+                errors.append(
+                    f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
+                )
+                break
+
+    return errors
+
+
 def check_us15_fewer_than_15_siblings(families):
     # US15: there should be fewer than 15 siblings in a family.
     errors = []

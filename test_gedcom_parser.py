@@ -18,6 +18,8 @@ from gedcom_parser import (
     check_us09_birth_before_parents_death,
     check_us10_marriage_after_14,
     check_us11_no_bigamy,
+    check_us14_multiple_births,
+    check_us15_fewer_than_15_siblings,
     check_us21_correct_gender,
     compute_age,
     format_date,
@@ -361,6 +363,57 @@ class TestUS11NoBigamy(unittest.TestCase):
         individuals = {"I01": make_individual(fams=["F01"])}
         families = {"F01": make_family(married=date(1980, 1, 1), husband="I01")}
         self.assertEqual(check_us11_no_bigamy(individuals, families), [])
+
+
+
+class TestUS14MultipleBirths(unittest.TestCase):
+
+    def test_five_births(self):
+        people = {}
+
+        for i in range(5):
+            people[f"I{i}"] = {"birth": "21 may 2001"}
+
+        families = {
+            "F01": make_family(children=["I0", "I1", "I2", "I3", "I4"])
+        }
+        errors = check_us14_multiple_births(people, families)
+        self.assertEqual(len(errors), 0)
+
+    def test_six_births(self):
+        people = {}
+        
+        for i in range(6):
+            people[f"I{i}"] = {"birth": "21 may 2001"}
+
+        families = {
+            "F01": make_family(children=["I0", "I1", "I2", "I3", "I4", "I5"])
+        }
+        errors = check_us14_multiple_births(people, families)
+        self.assertEqual(len(errors), 1)
+
+
+
+# Alexis and Kendall Pair Programming
+class TestUS15FewerThan15Siblings(unittest.TestCase):
+    def test_less_than_15_siblings(self):
+        families = {
+            "F01": make_family(children=["I1", "I2", "I3"])
+        }
+
+        errors = check_us15_fewer_than_15_siblings(families)
+        self.assertEqual(len(errors), 0)
+
+    def test_more_than_15_siblings(self):
+        families = {
+            "F01": make_family(children=[f"I{i}" for i in range(16)])
+        }
+
+        errors = check_us15_fewer_than_15_siblings(families)
+        self.assertEqual(len(errors), 1)
+
+
+
 
 
 class TestUS21CorrectGender(unittest.TestCase):
