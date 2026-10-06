@@ -1,0 +1,575 @@
+import sys
+from datetime import date, datetime, timedelta
+
+VALID_TAGS = {
+    (0, "INDI"),
+    (0, "FAM"),
+    (0, "HEAD"),
+    (0, "TRLR"),
+    (0, "NOTE"),
+    (1, "NAME"),
+    (1, "SEX"),
+    (1, "BIRT"),
+    (1, "DEAT"),
+    (1, "FAMC"),
+    (1, "FAMS"),
+    (1, "MARR"),
+    (1, "HUSB"),
+    (1, "WIFE"),
+    (1, "CHIL"),
+    (1, "DIV"),
+    (2, "DATE"),
+}
+
+
+def parse_line(line):
+    stripped = line.rstrip("\n").rstrip("\r")
+    first_space = stripped.find(" ")
+    level = int(stripped[:first_space])
+    rest = stripped[first_space + 1:]
+
+    if level == 0:
+        second_space = rest.find(" ")
+        if second_space == -1:
+            first_token = rest
+            remainder = ""
+        else:
+            first_token = rest[:second_space]
+            remainder = rest[second_space + 1:]
+
+        if remainder in ("INDI", "FAM"):
+            tag = remainder
+            arguments = first_token
+        else:
+            tag = first_token
+            arguments = remainder
+    else:
+        tag_space = rest.find(" ")
+        if tag_space == -1:
+            tag = rest
+            arguments = ""
+        else:
+            tag = rest[:tag_space]
+            arguments = rest[tag_space + 1:]
+
+    return level, tag, arguments
+
+
+def sort_key(record_id):
+    i = len(record_id)
+    while i > 0 and record_id[i - 1].isdigit():
+        i -= 1
+    prefix, digits = record_id[:i], record_id[i:]
+    return (prefix, int(digits) if digits else 0)
+
+
+def parse_gedcom_date(date_str):
+    try:
+        return datetime.strptime(date_str, "%d %b %Y").date()
+    except ValueError:
+        return None
+
+
+def add_months(d, months):
+    # Return the date `months` months after d, clamping the day to the
+    # last valid day of the target month (used for the 9-month and 14-year rules).
+    month_index = d.month - 1 + months
+    year = d.year + month_index // 12
+    month = month_index % 12 + 1
+    if month == 12:
+        next_month_first = date(year + 1, 1, 1)
+    else:
+        next_month_first = date(year, month + 1, 1)
+    last_day = (next_month_first - timedelta(days=1)).day
+    return date(year, month, min(d.day, last_day))
+
+
+def format_date(d):
+    return d.strftime("%Y-%m-%d") if d else "NA"
+
+
+def compute_age(birth, death):
+    if not birth:
+        return "NA"
+    end = death if death else date.today()
+    return end.year - birth.year - ((end.month, end.day) < (birth.month, birth.day))
+
+
+def format_id_set(ids):
+    if not ids:
+        return "NA"
+    return "{" + ", ".join(f"'{i}'" for i in sorted(ids, key=sort_key)) + "}"
+
+
+def check_us01_dates_before_today(individuals, families):
+    errors = []
+    today = date.today()
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if indi["birth"] and indi["birth"] > today:
+            errors.append(f"ERROR: INDIVIDUAL: US01: {indi_id}: Birthday {format_date(indi['birth'])} occurs after the current date")
+        if indi["death"] and indi["death"] > today:
+            errors.append(f"ERROR: INDIVIDUAL: US01: {indi_id}: Death date {format_date(indi['death'])} occurs after the current date")
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if fam["married"] and fam["married"] > today:
+            errors.append(f"ERROR: FAMILY: US01: {fam_id}: Married date {format_date(fam['married'])} occurs after the current date")
+        if fam["divorced"] and fam["divorced"] > today:
+            errors.append(f"ERROR: FAMILY: US01: {fam_id}: Divorced date {format_date(fam['divorced'])} occurs after the current date")
+    return errors
+
+
+def check_us02_birth_before_marriage(individuals, families):
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["fams"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam or not fam["married"]:
+                continue
+            if indi["birth"] > fam["married"]:
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US02: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs after marriage date {format_date(fam['married'])} in family {fam_id}"
+                )
+    return errors
+
+
+def check_us03_birth_before_death(individuals):
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["death"] or not indi["birth"]:
+            continue
+        if indi["birth"] > indi["death"]:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US03: {indi_id}: Birthday {format_date(indi['birth'])} "
+                f"occurs after death date {format_date(indi['death'])}"
+            )
+    return errors
+
+
+def check_us04_marriage_before_divorce(families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["divorced"] or not fam["married"]:
+            continue
+        if fam["married"] > fam["divorced"]:
+            errors.append(
+                f"ERROR: FAMILY: US04: {fam_id}: Married date {format_date(fam['married'])} "
+                f"occurs after divorced date {format_date(fam['divorced'])}"
+            )
+    return errors
+
+
+# US05 (Alexis)
+def check_us05_marriage_before_death(individuals, families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["married"]:
+            continue
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        if husband and husband["death"] and fam["married"] > husband["death"]:
+            errors.append(
+                "ERROR: FAMILY: US05: " + fam_id +
+                ": Marriage date " + format_date(fam["married"]) +
+                " occurs after death date " + format_date(husband["death"]) +
+                " of husband " + fam["husband"]
+            )
+        if wife and wife["death"] and fam["married"] > wife["death"]:
+            errors.append(
+                "ERROR: FAMILY: US05: " + fam_id +
+                ": Marriage date " + format_date(fam["married"]) +
+                " occurs after death date " + format_date(wife["death"]) +
+                " of wife " + fam["wife"]
+            )
+    return errors
+
+
+# US06 (Alexis)
+def check_us06_divorce_before_death(individuals, families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["divorced"]:
+            continue
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        if husband and husband["death"] and fam["divorced"] > husband["death"]:
+            errors.append(
+                "ERROR: FAMILY: US06: " + fam_id +
+                ": Divorce date " + format_date(fam["divorced"]) +
+                " occurs after death date " + format_date(husband["death"]) +
+                " of husband " + fam["husband"]
+            )
+        if wife and wife["death"] and fam["divorced"] > wife["death"]:
+            errors.append(
+                "ERROR: FAMILY: US06: " + fam_id +
+                ": Divorce date " + format_date(fam["divorced"]) +
+                " occurs after death date " + format_date(wife["death"]) +
+                " of wife " + fam["wife"]
+            )
+    return errors
+
+
+def check_us07_less_than_150(individuals, today=None):
+    # US07: a person's age should be less than 150 years.
+    errors = []
+    current_date = today if today is not None else date.today()
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        birth = indi["birth"]
+        if not birth:
+            continue
+        end = indi["death"] if indi["death"] else current_date
+        # Count completed years, accounting for whether the birthday has passed.
+        age = end.year - birth.year
+        if (end.month, end.day) < (birth.month, birth.day):
+            age -= 1
+        if age >= 150:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US07: {indi_id}: Age at "
+                f"{'death' if indi['death'] else 'current date'} is 150 years or more "
+                f"(birth {format_date(birth)}, end {format_date(end)})"
+            )
+    return errors
+
+
+def check_us08_birth_before_parents_marriage(individuals, families):
+    # US08: a child should be born after the parents' marriage and not more
+    # than 9 months after their divorce.
+    anomalies = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["famc"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam:
+                continue
+            if fam["married"] and indi["birth"] < fam["married"]:
+                anomalies.append(
+                    f"ANOMALY: INDIVIDUAL: US08: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs before marriage date {format_date(fam['married'])} of parents in family {fam_id}"
+                )
+            if fam["divorced"] and indi["birth"] > add_months(fam["divorced"], 9):
+                anomalies.append(
+                    f"ANOMALY: INDIVIDUAL: US08: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs more than 9 months after divorce date {format_date(fam['divorced'])} of parents in family {fam_id}"
+                )
+    return anomalies
+
+
+def check_us09_birth_before_parents_death(individuals, families):
+    # US09: a child should be born before the mother's death and before
+    # 9 months after the father's death.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["birth"]:
+            continue
+        for fam_id in sorted(indi["famc"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam:
+                continue
+            mother = individuals.get(fam["wife"])
+            father = individuals.get(fam["husband"])
+            if mother and mother["death"] and indi["birth"] > mother["death"]:
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US09: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs after death date {format_date(mother['death'])} of mother {fam['wife']} in family {fam_id}"
+                )
+            if father and father["death"] and indi["birth"] > add_months(father["death"], 9):
+                errors.append(
+                    f"ERROR: INDIVIDUAL: US09: {indi_id}: Birthday {format_date(indi['birth'])} "
+                    f"occurs more than 9 months after death date {format_date(father['death'])} of father {fam['husband']} in family {fam_id}"
+                )
+    return errors
+
+
+def check_us10_marriage_after_14(individuals, families):
+    # US10: a marriage should occur at least 14 years after the birth of both spouses.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["married"]:
+            continue
+        for role, spouse_id in (("husband", fam["husband"]), ("wife", fam["wife"])):
+            spouse = individuals.get(spouse_id)
+            if not spouse or not spouse["birth"]:
+                continue
+            # 14 years == 168 months; reuse the existing add_months helper
+            if fam["married"] < add_months(spouse["birth"], 168):
+                errors.append(
+                    f"ERROR: FAMILY: US10: {fam_id}: Married date {format_date(fam['married'])} "
+                    f"is less than 14 years after the {role} ({spouse_id}) birth date "
+                    f"{format_date(spouse['birth'])}"
+                )
+    return errors
+
+
+def marriage_end(fam, individuals):
+    # The date a marriage stops blocking a new one: the divorce date, or
+    # else the earlier spouse's death date, or None if still ongoing.
+    if fam["divorced"]:
+        return fam["divorced"]
+    end = None
+    for spouse_id in (fam["husband"], fam["wife"]):
+        spouse = individuals.get(spouse_id)
+        if spouse and spouse["death"]:
+            end = spouse["death"] if end is None else min(end, spouse["death"])
+    return end
+
+
+def check_us11_no_bigamy(individuals, families):
+    # US11: a marriage should not occur while either spouse is already
+    # married to someone else.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        intervals = []
+        for fam_id in sorted(indi["fams"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam or not fam["married"]:
+                continue
+            intervals.append((fam_id, fam["married"], marriage_end(fam, individuals)))
+
+        for i in range(len(intervals)):
+            for j in range(i + 1, len(intervals)):
+                fam_a, start_a, end_a = intervals[i]
+                fam_b, start_b, end_b = intervals[j]
+                open_end_a = end_a if end_a else date.max
+                open_end_b = end_b if end_b else date.max
+                if start_a < open_end_b and start_b < open_end_a:
+                    errors.append(
+                        f"ERROR: INDIVIDUAL: US11: {indi_id}: Marriage to family {fam_a} "
+                        f"({format_date(start_a)} - {format_date(end_a)}) overlaps marriage to "
+                        f"family {fam_b} ({format_date(start_b)} - {format_date(end_b)})"
+                    )
+    return errors
+
+
+# Alexi: solo
+def check_us14_multiple_births(people, families):
+    errors = []
+
+    # families
+    for fam_id in sorted(families, key=sort_key):
+        children = families[fam_id]["children"]
+
+        # children
+        for child_id in children:
+            birthday = people[child_id]["birth"]
+            count = 0
+
+            # birthday
+            for other_child_id in children:
+                other_birthday = people[other_child_id]["birth"]
+
+                if birthday == other_birthday:
+                    count = count + 1
+
+            if count > 5:
+                errors.append(
+                    f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
+                )
+                break
+
+    return errors
+
+
+def check_us15_fewer_than_15_siblings(families):
+    # US15: there should be fewer than 15 siblings in a family.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        num_siblings = len(fam["children"])
+        if num_siblings >= 15:
+            errors.append(
+                f"ERROR: FAMILY: US15: {fam_id}: Family has {num_siblings} siblings, which is 15 or more"
+            )
+    return errors
+
+
+# US21 (Kendall)
+def check_us21_correct_gender(individuals, families):
+    # US21: the husband in a family must be male and the wife must be female.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        for role, key, expected in (("HUSB", "husband", "M"), ("WIFE", "wife", "F")):
+            indi_id = fam[key]
+            indi = individuals.get(indi_id)
+            if indi is None:
+                continue
+            if indi["sex"] != expected:
+                errors.append(
+                    f"ERROR: FAMILY: US21: {fam_id}: {role} {indi_id} "
+                    f"has SEX {indi['sex'] or 'NA'}, expected {expected}"
+                )
+    return errors
+
+
+def print_table(title, headers, rows):
+    widths = [len(h) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], len(str(cell)))
+
+    def format_row(cells):
+        return " | ".join(str(cell).ljust(widths[i]) for i, cell in enumerate(cells))
+
+    print(f"\n{title}")
+    print(format_row(headers))
+    print("-+-".join("-" * w for w in widths))
+    for row in rows:
+        print(format_row(row))
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python3 gedcom_parser.py <gedcom_file>")
+        sys.exit(1)
+
+    gedcom_path = sys.argv[1]
+
+    individuals = {}
+    families = {}
+
+    person = ""
+    family = ""
+    last_level1_tag = ""
+
+    with open(gedcom_path, "r") as gedcom_file:
+        for raw_line in gedcom_file:
+            line = raw_line.rstrip("\n").rstrip("\r")
+            if not line.strip():
+                continue
+
+            print(f"--> {line}")
+            level, tag, arguments = parse_line(line)
+            valid = "Y" if (level, tag) in VALID_TAGS else "N"
+            print(f"<-- {level}|{tag}|{valid}|{arguments}")
+
+            if level == 0 and tag == "INDI":
+                individual_id = arguments
+                individuals[individual_id] = {
+                    "name": "",
+                    "sex": "",
+                    "birth": None,
+                    "death": None,
+                    "famc": set(),
+                    "fams": set(),
+                }
+                person = individual_id
+                family = ""
+
+            elif level == 0 and tag == "FAM":
+                family_id = arguments
+                families[family_id] = {
+                    "married": None,
+                    "divorced": None,
+                    "husband": "",
+                    "wife": "",
+                    "children": set(),
+                }
+                family = family_id
+                person = ""
+
+            elif level == 1:
+                last_level1_tag = tag
+                if person:
+                    if tag == "NAME":
+                        individuals[person]["name"] = arguments
+                    elif tag == "SEX":
+                        individuals[person]["sex"] = arguments
+                    elif tag == "FAMC":
+                        individuals[person]["famc"].add(arguments)
+                    elif tag == "FAMS":
+                        individuals[person]["fams"].add(arguments)
+                elif family:
+                    if tag == "HUSB":
+                        families[family]["husband"] = arguments
+                    elif tag == "WIFE":
+                        families[family]["wife"] = arguments
+                    elif tag == "CHIL":
+                        families[family]["children"].add(arguments)
+
+            elif level == 2 and tag == "DATE":
+                parsed_date = parse_gedcom_date(arguments)
+                if person:
+                    if last_level1_tag == "BIRT":
+                        individuals[person]["birth"] = parsed_date
+                    elif last_level1_tag == "DEAT":
+                        individuals[person]["death"] = parsed_date
+                elif family:
+                    if last_level1_tag == "MARR":
+                        families[family]["married"] = parsed_date
+                    elif last_level1_tag == "DIV":
+                        families[family]["divorced"] = parsed_date
+
+    indi_headers = ["ID", "Name", "Gender", "Birthday", "Age", "Alive", "Death", "Child", "Spouse"]
+    indi_rows = []
+    for person_id in sorted(individuals, key=sort_key):
+        indi = individuals[person_id]
+        indi_rows.append([
+            person_id,
+            indi["name"],
+            indi["sex"],
+            format_date(indi["birth"]),
+            compute_age(indi["birth"], indi["death"]),
+            str(indi["death"] is None),
+            format_date(indi["death"]),
+            format_id_set(indi["famc"]),
+            format_id_set(indi["fams"]),
+        ])
+    print_table("Individuals", indi_headers, indi_rows)
+
+    fam_headers = ["ID", "Married", "Divorced", "Husband ID", "Husband Name", "Wife ID", "Wife Name", "Children"]
+    fam_rows = []
+    for family_id in sorted(families, key=sort_key):
+        fam = families[family_id]
+        husband_id = fam["husband"]
+        wife_id = fam["wife"]
+        husband_name = individuals[husband_id]["name"] if husband_id in individuals else "NA"
+        wife_name = individuals[wife_id]["name"] if wife_id in individuals else "NA"
+        fam_rows.append([
+            family_id,
+            format_date(fam["married"]),
+            format_date(fam["divorced"]),
+            husband_id or "NA",
+            husband_name,
+            wife_id or "NA",
+            wife_name,
+            format_id_set(fam["children"]),
+        ])
+    print_table("Families", fam_headers, fam_rows)
+
+    errors = []
+    errors.extend(check_us01_dates_before_today(individuals, families))
+    errors.extend(check_us02_birth_before_marriage(individuals, families))
+    errors.extend(check_us03_birth_before_death(individuals))
+    errors.extend(check_us04_marriage_before_divorce(families))
+    errors.extend(check_us05_marriage_before_death(individuals, families))
+    errors.extend(check_us06_divorce_before_death(individuals, families))
+    errors.extend(check_us07_less_than_150(individuals))
+    errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
+    errors.extend(check_us09_birth_before_parents_death(individuals, families))
+    errors.extend(check_us10_marriage_after_14(individuals, families))
+    errors.extend(check_us11_no_bigamy(individuals, families))
+    errors.extend(check_us15_fewer_than_15_siblings(families))
+    errors.extend(check_us21_correct_gender(individuals, families))
+
+    if errors:
+        print("\nValidation Errors")
+        for error in errors:
+            print(error)
+
+
+if __name__ == "__main__":
+    main()
