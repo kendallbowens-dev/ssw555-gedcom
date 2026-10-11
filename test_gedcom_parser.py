@@ -222,6 +222,20 @@ class TestUS05MarriageBeforeDeath(unittest.TestCase):
         families = {"F01": make_family(married=date(2000, 1, 1), husband="I01", wife="I02")}
         self.assertEqual(check_us05_marriage_before_death(individuals, families), [])
 
+    def test_both_spouses_flagged_independently(self):
+        # Regression check for the US05/US06 de-duplication: both spouses
+        # must still be checked, not just whichever one the shared helper
+        # happens to look at first.
+        individuals = {
+            "I01": make_individual(death=date(1990, 1, 1)),
+            "I02": make_individual(death=date(1991, 1, 1)),
+        }
+        families = {"F01": make_family(married=date(2000, 1, 1), husband="I01", wife="I02")}
+        errors = check_us05_marriage_before_death(individuals, families)
+        self.assertEqual(len(errors), 2)
+        self.assertTrue(any("husband" in e for e in errors))
+        self.assertTrue(any("wife" in e for e in errors))
+
 
 class TestUS06DivorceBeforeDeath(unittest.TestCase):
     def test_divorce_after_wife_death_flagged(self):
@@ -392,6 +406,17 @@ class TestUS14MultipleBirths(unittest.TestCase):
         errors = check_us14_multiple_births(people, families)
         self.assertEqual(len(errors), 1)
 
+    def test_missing_birth_dates_are_not_counted_as_a_match(self):
+        # Regression test: the original implementation compared birth
+        # dates with `==`, and since None == None is True in Python, six
+        # children with NO recorded birth date were incorrectly flagged
+        # as a multiple birth. Missing data should just be ignored.
+        people = {f"I{i}": {"birth": None} for i in range(6)}
+        families = {
+            "F01": make_family(children=[f"I{i}" for i in range(6)])
+        }
+        errors = check_us14_multiple_births(people, families)
+        self.assertEqual(errors, [])
 
 
 # Alexis and Kendall Pair Programming
@@ -411,10 +436,6 @@ class TestUS15FewerThan15Siblings(unittest.TestCase):
 
         errors = check_us15_fewer_than_15_siblings(families)
         self.assertEqual(len(errors), 1)
-
-
-
-
 
 class TestUS21CorrectGender(unittest.TestCase):
     def test_husband_not_male_flagged(self):

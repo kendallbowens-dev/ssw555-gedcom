@@ -1,4 +1,5 @@
 import sys
+from collections import Counter
 from datetime import date, datetime, timedelta
 
 VALID_TAGS = {
@@ -165,56 +166,34 @@ def check_us04_marriage_before_divorce(families):
     return errors
 
 
-# US05 (Alexis)
-def check_us05_marriage_before_death(individuals, families):
+def _check_spouse_event_before_death(individuals, families, event_key, event_label, story_id):
+    # Shared by US05 (marriage before death) and US06 (divorce before death):
+    # a family event date should occur before the death of either spouse.
     errors = []
     for fam_id in sorted(families, key=sort_key):
         fam = families[fam_id]
-        if not fam["married"]:
+        event_date = fam[event_key]
+        if not event_date:
             continue
-        husband = individuals.get(fam["husband"])
-        wife = individuals.get(fam["wife"])
-        if husband and husband["death"] and fam["married"] > husband["death"]:
-            errors.append(
-                "ERROR: FAMILY: US05: " + fam_id +
-                ": Marriage date " + format_date(fam["married"]) +
-                " occurs after death date " + format_date(husband["death"]) +
-                " of husband " + fam["husband"]
-            )
-        if wife and wife["death"] and fam["married"] > wife["death"]:
-            errors.append(
-                "ERROR: FAMILY: US05: " + fam_id +
-                ": Marriage date " + format_date(fam["married"]) +
-                " occurs after death date " + format_date(wife["death"]) +
-                " of wife " + fam["wife"]
-            )
+        for role, spouse_id in (("husband", fam["husband"]), ("wife", fam["wife"])):
+            spouse = individuals.get(spouse_id)
+            if spouse and spouse["death"] and event_date > spouse["death"]:
+                errors.append(
+                    f"ERROR: FAMILY: {story_id}: {fam_id}: {event_label} date "
+                    f"{format_date(event_date)} occurs after death date "
+                    f"{format_date(spouse['death'])} of {role} {spouse_id}"
+                )
     return errors
+
+
+# US05 (Alexis)
+def check_us05_marriage_before_death(individuals, families):
+    return _check_spouse_event_before_death(individuals, families, "married", "Marriage", "US05")
 
 
 # US06 (Alexis)
 def check_us06_divorce_before_death(individuals, families):
-    errors = []
-    for fam_id in sorted(families, key=sort_key):
-        fam = families[fam_id]
-        if not fam["divorced"]:
-            continue
-        husband = individuals.get(fam["husband"])
-        wife = individuals.get(fam["wife"])
-        if husband and husband["death"] and fam["divorced"] > husband["death"]:
-            errors.append(
-                "ERROR: FAMILY: US06: " + fam_id +
-                ": Divorce date " + format_date(fam["divorced"]) +
-                " occurs after death date " + format_date(husband["death"]) +
-                " of husband " + fam["husband"]
-            )
-        if wife and wife["death"] and fam["divorced"] > wife["death"]:
-            errors.append(
-                "ERROR: FAMILY: US06: " + fam_id +
-                ": Divorce date " + format_date(fam["divorced"]) +
-                " occurs after death date " + format_date(wife["death"]) +
-                " of wife " + fam["wife"]
-            )
-    return errors
+    return _check_spouse_event_before_death(individuals, families, "divorced", "Divorce", "US06")
 
 
 def check_us07_less_than_150(individuals, today=None):
@@ -351,31 +330,22 @@ def check_us11_no_bigamy(individuals, families):
 
 
 # Alexi: solo
-def check_us14_multiple_births(people, families):
+def check_us14_multiple_births(individuals, families):
+    # US14: no more than five siblings should be born on the same date.
+    # Missing birth dates are excluded -- they're not evidence of a
+    # simultaneous birth.
     errors = []
-
-    # families
     for fam_id in sorted(families, key=sort_key):
-        children = families[fam_id]["children"]
-
-        # children
-        for child_id in children:
-            birthday = people[child_id]["birth"]
-            count = 0
-
-            # birthday
-            for other_child_id in children:
-                other_birthday = people[other_child_id]["birth"]
-
-                if birthday == other_birthday:
-                    count = count + 1
-
-            if count > 5:
-                errors.append(
-                    f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
-                )
-                break
-
+        birth_dates = [
+            individuals[child_id]["birth"]
+            for child_id in families[fam_id]["children"]
+            if individuals[child_id]["birth"] is not None
+        ]
+        births_sharing_a_date = Counter(birth_dates)
+        if births_sharing_a_date and max(births_sharing_a_date.values()) > 5:
+            errors.append(
+                f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
+            )
     return errors
 
 
