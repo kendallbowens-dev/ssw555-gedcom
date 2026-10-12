@@ -526,6 +526,7 @@ def main():
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
     errors.extend(check_us10_marriage_after_14(individuals, families))
     errors.extend(check_us11_no_bigamy(individuals, families))
+    errors.extend(check_us14_multiple_births(individuals, families))
     errors.extend(check_us15_fewer_than_15_siblings(families))
     errors.extend(check_us21_correct_gender(individuals, families))
 
