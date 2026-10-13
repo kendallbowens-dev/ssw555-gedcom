@@ -1,0 +1,563 @@
+--> 0 NOTE GitHub repository: https://github.com/kendallbowens-dev/ssw555-gedcom
+<-- 0|NOTE|Y|GitHub repository: https://github.com/kendallbowens-dev/ssw555-gedcom
+--> 0 NOTE SSW 555 Sprint 2 acceptance test - deliberate violations for US10, US11, US14, US15
+<-- 0|NOTE|Y|SSW 555 Sprint 2 acceptance test - deliberate violations for US10, US11, US14, US15
+--> 0 NOTE --- valid baseline family (should produce no errors) ---
+<-- 0|NOTE|Y|--- valid baseline family (should produce no errors) ---
+--> 0 I01 INDI
+<-- 0|INDI|Y|I01
+--> 1 NAME Adam /Sample/
+<-- 1|NAME|Y|Adam /Sample/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 3 JAN 1950
+<-- 2|DATE|Y|3 JAN 1950
+--> 1 FAMS F01
+<-- 1|FAMS|Y|F01
+--> 0 I02 INDI
+<-- 0|INDI|Y|I02
+--> 1 NAME Eve /Sample/
+<-- 1|NAME|Y|Eve /Sample/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 8 FEB 1952
+<-- 2|DATE|Y|8 FEB 1952
+--> 1 FAMS F01
+<-- 1|FAMS|Y|F01
+--> 0 I03 INDI
+<-- 0|INDI|Y|I03
+--> 1 NAME Cain /Sample/
+<-- 1|NAME|Y|Cain /Sample/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 5 JAN 1975
+<-- 2|DATE|Y|5 JAN 1975
+--> 1 FAMC F01
+<-- 1|FAMC|Y|F01
+--> 0 F01 FAM
+<-- 0|FAM|Y|F01
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 4 JUN 1972
+<-- 2|DATE|Y|4 JUN 1972
+--> 1 HUSB I01
+<-- 1|HUSB|Y|I01
+--> 1 WIFE I02
+<-- 1|WIFE|Y|I02
+--> 1 CHIL I03
+<-- 1|CHIL|Y|I03
+--> 0 NOTE --- US10: marriage less than 14 years after a spouse's birth ---
+<-- 0|NOTE|Y|--- US10: marriage less than 14 years after a spouse's birth ---
+--> 0 I04 INDI
+<-- 0|INDI|Y|I04
+--> 1 NAME Child /Groom/
+<-- 1|NAME|Y|Child /Groom/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 2000
+<-- 2|DATE|Y|1 JAN 2000
+--> 1 FAMS F02
+<-- 1|FAMS|Y|F02
+--> 0 I05 INDI
+<-- 0|INDI|Y|I05
+--> 1 NAME Adult /Bride/
+<-- 1|NAME|Y|Adult /Bride/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1980
+<-- 2|DATE|Y|1 JAN 1980
+--> 1 FAMS F02
+<-- 1|FAMS|Y|F02
+--> 0 F02 FAM
+<-- 0|FAM|Y|F02
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 1 JAN 2010
+<-- 2|DATE|Y|1 JAN 2010
+--> 1 HUSB I04
+<-- 1|HUSB|Y|I04
+--> 1 WIFE I05
+<-- 1|WIFE|Y|I05
+--> 0 NOTE --- US11: bigamy, marriage overlapping an existing marriage ---
+<-- 0|NOTE|Y|--- US11: bigamy, marriage overlapping an existing marriage ---
+--> 0 I06 INDI
+<-- 0|INDI|Y|I06
+--> 1 NAME Twice /Married/
+<-- 1|NAME|Y|Twice /Married/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1950
+<-- 2|DATE|Y|1 JAN 1950
+--> 1 FAMS F03
+<-- 1|FAMS|Y|F03
+--> 1 FAMS F04
+<-- 1|FAMS|Y|F04
+--> 0 I07 INDI
+<-- 0|INDI|Y|I07
+--> 1 NAME First /Spouse/
+<-- 1|NAME|Y|First /Spouse/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1952
+<-- 2|DATE|Y|1 JAN 1952
+--> 1 FAMS F03
+<-- 1|FAMS|Y|F03
+--> 0 I08 INDI
+<-- 0|INDI|Y|I08
+--> 1 NAME Second /Spouse/
+<-- 1|NAME|Y|Second /Spouse/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1955
+<-- 2|DATE|Y|1 JAN 1955
+--> 1 FAMS F04
+<-- 1|FAMS|Y|F04
+--> 0 F03 FAM
+<-- 0|FAM|Y|F03
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 1 JAN 1980
+<-- 2|DATE|Y|1 JAN 1980
+--> 1 HUSB I06
+<-- 1|HUSB|Y|I06
+--> 1 WIFE I07
+<-- 1|WIFE|Y|I07
+--> 0 F04 FAM
+<-- 0|FAM|Y|F04
+--> 1 MARR
+<-- 1|MARR|Y|
+--> 2 DATE 1 JAN 1985
+<-- 2|DATE|Y|1 JAN 1985
+--> 1 HUSB I06
+<-- 1|HUSB|Y|I06
+--> 1 WIFE I08
+<-- 1|WIFE|Y|I08
+--> 0 NOTE --- US14: more than 5 siblings sharing the same birthday ---
+<-- 0|NOTE|Y|--- US14: more than 5 siblings sharing the same birthday ---
+--> 0 I09 INDI
+<-- 0|INDI|Y|I09
+--> 1 NAME Father /Usefourteen/
+<-- 1|NAME|Y|Father /Usefourteen/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1960
+<-- 2|DATE|Y|1 JAN 1960
+--> 1 FAMS F05
+<-- 1|FAMS|Y|F05
+--> 0 I10 INDI
+<-- 0|INDI|Y|I10
+--> 1 NAME Mother /Usefourteen/
+<-- 1|NAME|Y|Mother /Usefourteen/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1962
+<-- 2|DATE|Y|1 JAN 1962
+--> 1 FAMS F05
+<-- 1|FAMS|Y|F05
+--> 0 I11 INDI
+<-- 0|INDI|Y|I11
+--> 1 NAME Sextuplet /One/
+<-- 1|NAME|Y|Sextuplet /One/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 I12 INDI
+<-- 0|INDI|Y|I12
+--> 1 NAME Sextuplet /Two/
+<-- 1|NAME|Y|Sextuplet /Two/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 I13 INDI
+<-- 0|INDI|Y|I13
+--> 1 NAME Sextuplet /Three/
+<-- 1|NAME|Y|Sextuplet /Three/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 I14 INDI
+<-- 0|INDI|Y|I14
+--> 1 NAME Sextuplet /Four/
+<-- 1|NAME|Y|Sextuplet /Four/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 I15 INDI
+<-- 0|INDI|Y|I15
+--> 1 NAME Sextuplet /Five/
+<-- 1|NAME|Y|Sextuplet /Five/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 I16 INDI
+<-- 0|INDI|Y|I16
+--> 1 NAME Sextuplet /Six/
+<-- 1|NAME|Y|Sextuplet /Six/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JUN 2010
+<-- 2|DATE|Y|1 JUN 2010
+--> 1 FAMC F05
+<-- 1|FAMC|Y|F05
+--> 0 F05 FAM
+<-- 0|FAM|Y|F05
+--> 1 HUSB I09
+<-- 1|HUSB|Y|I09
+--> 1 WIFE I10
+<-- 1|WIFE|Y|I10
+--> 1 CHIL I11
+<-- 1|CHIL|Y|I11
+--> 1 CHIL I12
+<-- 1|CHIL|Y|I12
+--> 1 CHIL I13
+<-- 1|CHIL|Y|I13
+--> 1 CHIL I14
+<-- 1|CHIL|Y|I14
+--> 1 CHIL I15
+<-- 1|CHIL|Y|I15
+--> 1 CHIL I16
+<-- 1|CHIL|Y|I16
+--> 0 NOTE --- US15: 15 or more siblings in one family ---
+<-- 0|NOTE|Y|--- US15: 15 or more siblings in one family ---
+--> 0 I17 INDI
+<-- 0|INDI|Y|I17
+--> 1 NAME Father /Usefifteen/
+<-- 1|NAME|Y|Father /Usefifteen/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1950
+<-- 2|DATE|Y|1 JAN 1950
+--> 1 FAMS F06
+<-- 1|FAMS|Y|F06
+--> 0 I18 INDI
+<-- 0|INDI|Y|I18
+--> 1 NAME Mother /Usefifteen/
+<-- 1|NAME|Y|Mother /Usefifteen/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1952
+<-- 2|DATE|Y|1 JAN 1952
+--> 1 FAMS F06
+<-- 1|FAMS|Y|F06
+--> 0 I19 INDI
+<-- 0|INDI|Y|I19
+--> 1 NAME Sibling /One/
+<-- 1|NAME|Y|Sibling /One/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1980
+<-- 2|DATE|Y|1 JAN 1980
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I20 INDI
+<-- 0|INDI|Y|I20
+--> 1 NAME Sibling /Two/
+<-- 1|NAME|Y|Sibling /Two/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1981
+<-- 2|DATE|Y|1 JAN 1981
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I21 INDI
+<-- 0|INDI|Y|I21
+--> 1 NAME Sibling /Three/
+<-- 1|NAME|Y|Sibling /Three/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1982
+<-- 2|DATE|Y|1 JAN 1982
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I22 INDI
+<-- 0|INDI|Y|I22
+--> 1 NAME Sibling /Four/
+<-- 1|NAME|Y|Sibling /Four/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1983
+<-- 2|DATE|Y|1 JAN 1983
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I23 INDI
+<-- 0|INDI|Y|I23
+--> 1 NAME Sibling /Five/
+<-- 1|NAME|Y|Sibling /Five/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1984
+<-- 2|DATE|Y|1 JAN 1984
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I24 INDI
+<-- 0|INDI|Y|I24
+--> 1 NAME Sibling /Six/
+<-- 1|NAME|Y|Sibling /Six/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1985
+<-- 2|DATE|Y|1 JAN 1985
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I25 INDI
+<-- 0|INDI|Y|I25
+--> 1 NAME Sibling /Seven/
+<-- 1|NAME|Y|Sibling /Seven/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1986
+<-- 2|DATE|Y|1 JAN 1986
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I26 INDI
+<-- 0|INDI|Y|I26
+--> 1 NAME Sibling /Eight/
+<-- 1|NAME|Y|Sibling /Eight/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1987
+<-- 2|DATE|Y|1 JAN 1987
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I27 INDI
+<-- 0|INDI|Y|I27
+--> 1 NAME Sibling /Nine/
+<-- 1|NAME|Y|Sibling /Nine/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1988
+<-- 2|DATE|Y|1 JAN 1988
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I28 INDI
+<-- 0|INDI|Y|I28
+--> 1 NAME Sibling /Ten/
+<-- 1|NAME|Y|Sibling /Ten/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1989
+<-- 2|DATE|Y|1 JAN 1989
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I29 INDI
+<-- 0|INDI|Y|I29
+--> 1 NAME Sibling /Eleven/
+<-- 1|NAME|Y|Sibling /Eleven/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1990
+<-- 2|DATE|Y|1 JAN 1990
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I30 INDI
+<-- 0|INDI|Y|I30
+--> 1 NAME Sibling /Twelve/
+<-- 1|NAME|Y|Sibling /Twelve/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1991
+<-- 2|DATE|Y|1 JAN 1991
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I31 INDI
+<-- 0|INDI|Y|I31
+--> 1 NAME Sibling /Thirteen/
+<-- 1|NAME|Y|Sibling /Thirteen/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1992
+<-- 2|DATE|Y|1 JAN 1992
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I32 INDI
+<-- 0|INDI|Y|I32
+--> 1 NAME Sibling /Fourteen/
+<-- 1|NAME|Y|Sibling /Fourteen/
+--> 1 SEX F
+<-- 1|SEX|Y|F
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1993
+<-- 2|DATE|Y|1 JAN 1993
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 I33 INDI
+<-- 0|INDI|Y|I33
+--> 1 NAME Sibling /Fifteen/
+<-- 1|NAME|Y|Sibling /Fifteen/
+--> 1 SEX M
+<-- 1|SEX|Y|M
+--> 1 BIRT
+<-- 1|BIRT|Y|
+--> 2 DATE 1 JAN 1994
+<-- 2|DATE|Y|1 JAN 1994
+--> 1 FAMC F06
+<-- 1|FAMC|Y|F06
+--> 0 F06 FAM
+<-- 0|FAM|Y|F06
+--> 1 HUSB I17
+<-- 1|HUSB|Y|I17
+--> 1 WIFE I18
+<-- 1|WIFE|Y|I18
+--> 1 CHIL I19
+<-- 1|CHIL|Y|I19
+--> 1 CHIL I20
+<-- 1|CHIL|Y|I20
+--> 1 CHIL I21
+<-- 1|CHIL|Y|I21
+--> 1 CHIL I22
+<-- 1|CHIL|Y|I22
+--> 1 CHIL I23
+<-- 1|CHIL|Y|I23
+--> 1 CHIL I24
+<-- 1|CHIL|Y|I24
+--> 1 CHIL I25
+<-- 1|CHIL|Y|I25
+--> 1 CHIL I26
+<-- 1|CHIL|Y|I26
+--> 1 CHIL I27
+<-- 1|CHIL|Y|I27
+--> 1 CHIL I28
+<-- 1|CHIL|Y|I28
+--> 1 CHIL I29
+<-- 1|CHIL|Y|I29
+--> 1 CHIL I30
+<-- 1|CHIL|Y|I30
+--> 1 CHIL I31
+<-- 1|CHIL|Y|I31
+--> 1 CHIL I32
+<-- 1|CHIL|Y|I32
+--> 1 CHIL I33
+<-- 1|CHIL|Y|I33
+--> 0 TRLR
+<-- 0|TRLR|Y|
+
+Individuals
+ID  | Name                 | Gender | Birthday   | Age | Alive | Death | Child   | Spouse        
+----+----------------------+--------+------------+-----+-------+-------+---------+---------------
+I01 | Adam /Sample/        | M      | 1950-01-03 | 76  | True  | NA    | NA      | {'F01'}       
+I02 | Eve /Sample/         | F      | 1952-02-08 | 74  | True  | NA    | NA      | {'F01'}       
+I03 | Cain /Sample/        | M      | 1975-01-05 | 51  | True  | NA    | {'F01'} | NA            
+I04 | Child /Groom/        | M      | 2000-01-01 | 26  | True  | NA    | NA      | {'F02'}       
+I05 | Adult /Bride/        | F      | 1980-01-01 | 46  | True  | NA    | NA      | {'F02'}       
+I06 | Twice /Married/      | M      | 1950-01-01 | 76  | True  | NA    | NA      | {'F03', 'F04'}
+I07 | First /Spouse/       | F      | 1952-01-01 | 74  | True  | NA    | NA      | {'F03'}       
+I08 | Second /Spouse/      | F      | 1955-01-01 | 71  | True  | NA    | NA      | {'F04'}       
+I09 | Father /Usefourteen/ | M      | 1960-01-01 | 66  | True  | NA    | NA      | {'F05'}       
+I10 | Mother /Usefourteen/ | F      | 1962-01-01 | 64  | True  | NA    | NA      | {'F05'}       
+I11 | Sextuplet /One/      | M      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I12 | Sextuplet /Two/      | F      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I13 | Sextuplet /Three/    | M      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I14 | Sextuplet /Four/     | F      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I15 | Sextuplet /Five/     | M      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I16 | Sextuplet /Six/      | F      | 2010-06-01 | 16  | True  | NA    | {'F05'} | NA            
+I17 | Father /Usefifteen/  | M      | 1950-01-01 | 76  | True  | NA    | NA      | {'F06'}       
+I18 | Mother /Usefifteen/  | F      | 1952-01-01 | 74  | True  | NA    | NA      | {'F06'}       
+I19 | Sibling /One/        | M      | 1980-01-01 | 46  | True  | NA    | {'F06'} | NA            
+I20 | Sibling /Two/        | F      | 1981-01-01 | 45  | True  | NA    | {'F06'} | NA            
+I21 | Sibling /Three/      | M      | 1982-01-01 | 44  | True  | NA    | {'F06'} | NA            
+I22 | Sibling /Four/       | F      | 1983-01-01 | 43  | True  | NA    | {'F06'} | NA            
+I23 | Sibling /Five/       | M      | 1984-01-01 | 42  | True  | NA    | {'F06'} | NA            
+I24 | Sibling /Six/        | F      | 1985-01-01 | 41  | True  | NA    | {'F06'} | NA            
+I25 | Sibling /Seven/      | M      | 1986-01-01 | 40  | True  | NA    | {'F06'} | NA            
+I26 | Sibling /Eight/      | F      | 1987-01-01 | 39  | True  | NA    | {'F06'} | NA            
+I27 | Sibling /Nine/       | M      | 1988-01-01 | 38  | True  | NA    | {'F06'} | NA            
+I28 | Sibling /Ten/        | F      | 1989-01-01 | 37  | True  | NA    | {'F06'} | NA            
+I29 | Sibling /Eleven/     | M      | 1990-01-01 | 36  | True  | NA    | {'F06'} | NA            
+I30 | Sibling /Twelve/     | F      | 1991-01-01 | 35  | True  | NA    | {'F06'} | NA            
+I31 | Sibling /Thirteen/   | M      | 1992-01-01 | 34  | True  | NA    | {'F06'} | NA            
+I32 | Sibling /Fourteen/   | F      | 1993-01-01 | 33  | True  | NA    | {'F06'} | NA            
+I33 | Sibling /Fifteen/    | M      | 1994-01-01 | 32  | True  | NA    | {'F06'} | NA            
+
+Families
+ID  | Married    | Divorced | Husband ID | Husband Name         | Wife ID | Wife Name            | Children                                                                                                 
+----+------------+----------+------------+----------------------+---------+----------------------+----------------------------------------------------------------------------------------------------------
+F01 | 1972-06-04 | NA       | I01        | Adam /Sample/        | I02     | Eve /Sample/         | {'I03'}                                                                                                  
+F02 | 2010-01-01 | NA       | I04        | Child /Groom/        | I05     | Adult /Bride/        | NA                                                                                                       
+F03 | 1980-01-01 | NA       | I06        | Twice /Married/      | I07     | First /Spouse/       | NA                                                                                                       
+F04 | 1985-01-01 | NA       | I06        | Twice /Married/      | I08     | Second /Spouse/      | NA                                                                                                       
+F05 | NA         | NA       | I09        | Father /Usefourteen/ | I10     | Mother /Usefourteen/ | {'I11', 'I12', 'I13', 'I14', 'I15', 'I16'}                                                               
+F06 | NA         | NA       | I17        | Father /Usefifteen/  | I18     | Mother /Usefifteen/  | {'I19', 'I20', 'I21', 'I22', 'I23', 'I24', 'I25', 'I26', 'I27', 'I28', 'I29', 'I30', 'I31', 'I32', 'I33'}
+
+Validation Errors
+ERROR: FAMILY: US10: F02: Married date 2010-01-01 is less than 14 years after the husband (I04) birth date 2000-01-01
+ERROR: INDIVIDUAL: US11: I06: Marriage to family F03 (1980-01-01 - NA) overlaps marriage to family F04 (1985-01-01 - NA)
+ERROR: FAMILY: US14: F05: More than 5 siblings have the same birthday
+ERROR: FAMILY: US15: F06: Family has 15 siblings, which is 15 or more
