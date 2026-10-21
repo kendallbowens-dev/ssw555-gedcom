@@ -1,5 +1,4 @@
 import sys
-from collections import Counter
 from datetime import date, datetime, timedelta
 
 VALID_TAGS = {
@@ -166,34 +165,56 @@ def check_us04_marriage_before_divorce(families):
     return errors
 
 
-def _check_spouse_event_before_death(individuals, families, event_key, event_label, story_id):
-    # Shared by US05 (marriage before death) and US06 (divorce before death):
-    # a family event date should occur before the death of either spouse.
+# US05 (Alexis)
+def check_us05_marriage_before_death(individuals, families):
     errors = []
     for fam_id in sorted(families, key=sort_key):
         fam = families[fam_id]
-        event_date = fam[event_key]
-        if not event_date:
+        if not fam["married"]:
             continue
-        for role, spouse_id in (("husband", fam["husband"]), ("wife", fam["wife"])):
-            spouse = individuals.get(spouse_id)
-            if spouse and spouse["death"] and event_date > spouse["death"]:
-                errors.append(
-                    f"ERROR: FAMILY: {story_id}: {fam_id}: {event_label} date "
-                    f"{format_date(event_date)} occurs after death date "
-                    f"{format_date(spouse['death'])} of {role} {spouse_id}"
-                )
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        if husband and husband["death"] and fam["married"] > husband["death"]:
+            errors.append(
+                "ERROR: FAMILY: US05: " + fam_id +
+                ": Marriage date " + format_date(fam["married"]) +
+                " occurs after death date " + format_date(husband["death"]) +
+                " of husband " + fam["husband"]
+            )
+        if wife and wife["death"] and fam["married"] > wife["death"]:
+            errors.append(
+                "ERROR: FAMILY: US05: " + fam_id +
+                ": Marriage date " + format_date(fam["married"]) +
+                " occurs after death date " + format_date(wife["death"]) +
+                " of wife " + fam["wife"]
+            )
     return errors
-
-
-# US05 (Alexis)
-def check_us05_marriage_before_death(individuals, families):
-    return _check_spouse_event_before_death(individuals, families, "married", "Marriage", "US05")
 
 
 # US06 (Alexis)
 def check_us06_divorce_before_death(individuals, families):
-    return _check_spouse_event_before_death(individuals, families, "divorced", "Divorce", "US06")
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["divorced"]:
+            continue
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        if husband and husband["death"] and fam["divorced"] > husband["death"]:
+            errors.append(
+                "ERROR: FAMILY: US06: " + fam_id +
+                ": Divorce date " + format_date(fam["divorced"]) +
+                " occurs after death date " + format_date(husband["death"]) +
+                " of husband " + fam["husband"]
+            )
+        if wife and wife["death"] and fam["divorced"] > wife["death"]:
+            errors.append(
+                "ERROR: FAMILY: US06: " + fam_id +
+                ": Divorce date " + format_date(fam["divorced"]) +
+                " occurs after death date " + format_date(wife["death"]) +
+                " of wife " + fam["wife"]
+            )
+    return errors
 
 
 def check_us07_less_than_150(individuals, today=None):
@@ -288,80 +309,6 @@ def check_us10_marriage_after_14(individuals, families):
     return errors
 
 
-def marriage_end(fam, individuals):
-    # The date a marriage stops blocking a new one: the divorce date, or
-    # else the earlier spouse's death date, or None if still ongoing.
-    if fam["divorced"]:
-        return fam["divorced"]
-    end = None
-    for spouse_id in (fam["husband"], fam["wife"]):
-        spouse = individuals.get(spouse_id)
-        if spouse and spouse["death"]:
-            end = spouse["death"] if end is None else min(end, spouse["death"])
-    return end
-
-
-def check_us11_no_bigamy(individuals, families):
-    # US11: a marriage should not occur while either spouse is already
-    # married to someone else.
-    errors = []
-    for indi_id in sorted(individuals, key=sort_key):
-        indi = individuals[indi_id]
-        intervals = []
-        for fam_id in sorted(indi["fams"], key=sort_key):
-            fam = families.get(fam_id)
-            if not fam or not fam["married"]:
-                continue
-            intervals.append((fam_id, fam["married"], marriage_end(fam, individuals)))
-
-        for i in range(len(intervals)):
-            for j in range(i + 1, len(intervals)):
-                fam_a, start_a, end_a = intervals[i]
-                fam_b, start_b, end_b = intervals[j]
-                open_end_a = end_a if end_a else date.max
-                open_end_b = end_b if end_b else date.max
-                if start_a < open_end_b and start_b < open_end_a:
-                    errors.append(
-                        f"ERROR: INDIVIDUAL: US11: {indi_id}: Marriage to family {fam_a} "
-                        f"({format_date(start_a)} - {format_date(end_a)}) overlaps marriage to "
-                        f"family {fam_b} ({format_date(start_b)} - {format_date(end_b)})"
-                    )
-    return errors
-
-
-# Alexi: solo
-def check_us14_multiple_births(individuals, families):
-    # US14: no more than five siblings should be born on the same date.
-    # Missing birth dates are excluded -- they're not evidence of a
-    # simultaneous birth.
-    errors = []
-    for fam_id in sorted(families, key=sort_key):
-        birth_dates = [
-            individuals[child_id]["birth"]
-            for child_id in families[fam_id]["children"]
-            if individuals[child_id]["birth"] is not None
-        ]
-        births_sharing_a_date = Counter(birth_dates)
-        if births_sharing_a_date and max(births_sharing_a_date.values()) > 5:
-            errors.append(
-                f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
-            )
-    return errors
-
-
-def check_us15_fewer_than_15_siblings(families):
-    # US15: there should be fewer than 15 siblings in a family.
-    errors = []
-    for fam_id in sorted(families, key=sort_key):
-        fam = families[fam_id]
-        num_siblings = len(fam["children"])
-        if num_siblings >= 15:
-            errors.append(
-                f"ERROR: FAMILY: US15: {fam_id}: Family has {num_siblings} siblings, which is 15 or more"
-            )
-    return errors
-
-
 # US21 (Kendall)
 def check_us21_correct_gender(individuals, families):
     # US21: the husband in a family must be male and the wife must be female.
@@ -376,6 +323,57 @@ def check_us21_correct_gender(individuals, families):
                     f"ERROR: FAMILY: US21: {fam_id}: {role} {indi_id} "
                     f"has SEX {indi['sex'] or 'NA'}, expected {expected}"
                 )
+    return errors
+
+
+def check_us12_parents_not_too_old(individuals, families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        mother = individuals.get(fam["wife"])
+        father = individuals.get(fam["husband"])
+        for child_id in sorted(fam["children"], key=sort_key):
+            child = individuals.get(child_id)
+            if not child or not child["birth"]:
+                continue
+            if mother and mother["birth"]:
+                mother_age = compute_age(mother["birth"], child["birth"])
+                if mother_age >= 60:
+                    errors.append(
+                        f"ERROR: FAMILY: US12: {fam_id}: Mother {fam['wife']} is {mother_age} "
+                        f"years older than child {child_id}"
+                    )
+            if father and father["birth"]:
+                father_age = compute_age(father["birth"], child["birth"])
+                if father_age >= 80:
+                    errors.append(
+                        f"ERROR: FAMILY: US12: {fam_id}: Father {fam['husband']} is {father_age} "
+                        f"years older than child {child_id}"
+                    )
+    return errors
+
+
+def check_us13_siblings_spacing(individuals, families):
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        # keep only children with a known birth date, sorted by birth date then id
+        kids = [
+            (child_id, individuals[child_id]["birth"])
+            for child_id in fam["children"]
+            if child_id in individuals and individuals[child_id]["birth"]
+        ]
+        kids.sort(key=lambda pair: (pair[1], sort_key(pair[0])))
+        for i in range(len(kids)):
+            for j in range(i + 1, len(kids)):
+                id_a, birth_a = kids[i]
+                id_b, birth_b = kids[j]
+                gap = birth_b - birth_a  # non-negative because the list is sorted
+                if gap > timedelta(days=2) and birth_b < add_months(birth_a, 8):
+                    errors.append(
+                        f"ERROR: FAMILY: US13: {fam_id}: Siblings {id_a} and {id_b} are born "
+                        f"{gap.days} days apart (more than 2 days and less than 8 months)"
+                    )
     return errors
 
 
@@ -525,10 +523,9 @@ def main():
     errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
     errors.extend(check_us10_marriage_after_14(individuals, families))
-    errors.extend(check_us11_no_bigamy(individuals, families))
-    errors.extend(check_us14_multiple_births(individuals, families))
-    errors.extend(check_us15_fewer_than_15_siblings(families))
     errors.extend(check_us21_correct_gender(individuals, families))
+    errors.extend(check_us12_parents_not_too_old(individuals, families))
+    errors.extend(check_us13_siblings_spacing(individuals, families))
 
     if errors:
         print("\nValidation Errors")
