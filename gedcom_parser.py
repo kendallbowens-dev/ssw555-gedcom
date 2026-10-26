@@ -1,4 +1,5 @@
 import sys
+from collections import Counter
 from datetime import date, datetime, timedelta
 
 VALID_TAGS = {
@@ -326,6 +327,47 @@ def check_us21_correct_gender(individuals, families):
     return errors
 
 
+def marriage_end(fam, individuals):
+    # The date a marriage stops blocking a new one: the divorce date, or
+    # else the earlier spouse's death date, or None if still ongoing.
+    if fam["divorced"]:
+        return fam["divorced"]
+    end = None
+    for spouse_id in (fam["husband"], fam["wife"]):
+        spouse = individuals.get(spouse_id)
+        if spouse and spouse["death"]:
+            end = spouse["death"] if end is None else min(end, spouse["death"])
+    return end
+
+
+def check_us11_no_bigamy(individuals, families):
+    # US11: a marriage should not occur while either spouse is already
+    # married to someone else.
+    errors = []
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        intervals = []
+        for fam_id in sorted(indi["fams"], key=sort_key):
+            fam = families.get(fam_id)
+            if not fam or not fam["married"]:
+                continue
+            intervals.append((fam_id, fam["married"], marriage_end(fam, individuals)))
+
+        for i in range(len(intervals)):
+            for j in range(i + 1, len(intervals)):
+                fam_a, start_a, end_a = intervals[i]
+                fam_b, start_b, end_b = intervals[j]
+                open_end_a = end_a if end_a else date.max
+                open_end_b = end_b if end_b else date.max
+                if start_a < open_end_b and start_b < open_end_a:
+                    errors.append(
+                        f"ERROR: INDIVIDUAL: US11: {indi_id}: Marriage to family {fam_a} "
+                        f"({format_date(start_a)} - {format_date(end_a)}) overlaps marriage to "
+                        f"family {fam_b} ({format_date(start_b)} - {format_date(end_b)})"
+                    )
+    return errors
+
+
 def check_us12_parents_not_too_old(individuals, families):
     errors = []
     for fam_id in sorted(families, key=sort_key):
@@ -377,6 +419,84 @@ def check_us13_siblings_spacing(individuals, families):
     return errors
 
 
+# Alexi: solo
+def check_us14_multiple_births(individuals, families):
+    # US14: no more than five siblings should be born on the same date.
+    # Missing birth dates are excluded -- they're not evidence of a
+    # simultaneous birth.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        birth_dates = [
+            individuals[child_id]["birth"]
+            for child_id in families[fam_id]["children"]
+            if individuals[child_id]["birth"] is not None
+        ]
+        births_sharing_a_date = Counter(birth_dates)
+        if births_sharing_a_date and max(births_sharing_a_date.values()) > 5:
+            errors.append(
+                f"ERROR: FAMILY: US14: {fam_id}: More than 5 siblings have the same birthday"
+            )
+    return errors
+
+
+def check_us15_fewer_than_15_siblings(families):
+    # US15: there should be fewer than 15 siblings in a family.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        num_siblings = len(fam["children"])
+        if num_siblings >= 15:
+            errors.append(
+                f"ERROR: FAMILY: US15: {fam_id}: Family has {num_siblings} siblings, which is 15 or more"
+            )
+    return errors
+
+
+def check_us22_unique_ids(indi_ids, fam_ids):
+    # US22: all individual IDs must be unique, and all family IDs must be
+    # unique. Takes every ID as it appeared in the file (including
+    # repeats) since the individuals/families dicts are keyed by ID and
+    # would otherwise silently collapse a duplicate into one record.
+    errors = []
+    indi_counts = Counter(indi_ids)
+    for indi_id in sorted(indi_counts, key=sort_key):
+        count = indi_counts[indi_id]
+        if count > 1:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US22: {indi_id}: ID appears {count} times, "
+                f"expected a unique ID"
+            )
+    fam_counts = Counter(fam_ids)
+    for fam_id in sorted(fam_counts, key=sort_key):
+        count = fam_counts[fam_id]
+        if count > 1:
+            errors.append(
+                f"ERROR: FAMILY: US22: {fam_id}: ID appears {count} times, "
+                f"expected a unique ID"
+            )
+    return errors
+
+
+def check_us23_unique_name_and_birth(individuals):
+    # US23: no more than one individual should share both the same name
+    # and the same birth date.
+    errors = []
+    seen = {}
+    for indi_id in sorted(individuals, key=sort_key):
+        indi = individuals[indi_id]
+        if not indi["name"] or not indi["birth"]:
+            continue
+        key = (indi["name"], indi["birth"])
+        if key in seen:
+            errors.append(
+                f"ERROR: INDIVIDUAL: US23: {indi_id}: Has the same name '{indi['name']}' "
+                f"and birth date {format_date(indi['birth'])} as individual {seen[key]}"
+            )
+        else:
+            seen[key] = indi_id
+    return errors
+
+
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
     for row in rows:
@@ -403,6 +523,13 @@ def main():
     individuals = {}
     families = {}
 
+    # Every individual/family ID as it appears in the file, including
+    # repeats -- the dicts above are keyed by ID, so a duplicate would
+    # otherwise silently overwrite the earlier record before US22 could
+    # ever see it.
+    indi_id_log = []
+    fam_id_log = []
+
     person = ""
     family = ""
     last_level1_tag = ""
@@ -420,6 +547,7 @@ def main():
 
             if level == 0 and tag == "INDI":
                 individual_id = arguments
+                indi_id_log.append(individual_id)
                 individuals[individual_id] = {
                     "name": "",
                     "sex": "",
@@ -433,6 +561,7 @@ def main():
 
             elif level == 0 and tag == "FAM":
                 family_id = arguments
+                fam_id_log.append(family_id)
                 families[family_id] = {
                     "married": None,
                     "divorced": None,
@@ -523,9 +652,14 @@ def main():
     errors.extend(check_us08_birth_before_parents_marriage(individuals, families))
     errors.extend(check_us09_birth_before_parents_death(individuals, families))
     errors.extend(check_us10_marriage_after_14(individuals, families))
-    errors.extend(check_us21_correct_gender(individuals, families))
+    errors.extend(check_us11_no_bigamy(individuals, families))
     errors.extend(check_us12_parents_not_too_old(individuals, families))
     errors.extend(check_us13_siblings_spacing(individuals, families))
+    errors.extend(check_us14_multiple_births(individuals, families))
+    errors.extend(check_us15_fewer_than_15_siblings(families))
+    errors.extend(check_us21_correct_gender(individuals, families))
+    errors.extend(check_us22_unique_ids(indi_id_log, fam_id_log))
+    errors.extend(check_us23_unique_name_and_birth(individuals))
 
     if errors:
         print("\nValidation Errors")

@@ -21,6 +21,8 @@ from gedcom_parser import (
     check_us14_multiple_births,
     check_us15_fewer_than_15_siblings,
     check_us21_correct_gender,
+    check_us22_unique_ids,
+    check_us23_unique_name_and_birth,
     compute_age,
     format_date,
     format_id_set,
@@ -459,6 +461,60 @@ class TestUS21CorrectGender(unittest.TestCase):
         }
         families = {"F01": make_family(husband="I01", wife="I02")}
         self.assertEqual(check_us21_correct_gender(individuals, families), [])
+
+
+class TestUS22UniqueIds(unittest.TestCase):
+    def test_duplicate_individual_id_flagged(self):
+        errors = check_us22_unique_ids(["I01", "I02", "I01"], ["F01"])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("INDIVIDUAL", errors[0])
+        self.assertIn("I01", errors[0])
+
+    def test_duplicate_family_id_flagged(self):
+        errors = check_us22_unique_ids(["I01"], ["F01", "F01"])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("FAMILY", errors[0])
+        self.assertIn("F01", errors[0])
+
+    def test_unique_ids_clean(self):
+        errors = check_us22_unique_ids(["I01", "I02"], ["F01", "F02"])
+        self.assertEqual(errors, [])
+
+    def test_both_kinds_of_duplicates_flagged_together(self):
+        errors = check_us22_unique_ids(["I01", "I01", "I02"], ["F01", "F01"])
+        self.assertEqual(len(errors), 2)
+
+
+class TestUS23UniqueNameAndBirth(unittest.TestCase):
+    def test_matching_name_and_birth_flagged(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Joe /Smith/", birth=date(2000, 1, 1)),
+        }
+        errors = check_us23_unique_name_and_birth(individuals)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("I02", errors[0])
+
+    def test_same_name_different_birth_clean(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Joe /Smith/", birth=date(1999, 1, 1)),
+        }
+        self.assertEqual(check_us23_unique_name_and_birth(individuals), [])
+
+    def test_same_birth_different_name_clean(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Jane /Smith/", birth=date(2000, 1, 1)),
+        }
+        self.assertEqual(check_us23_unique_name_and_birth(individuals), [])
+
+    def test_missing_name_or_birth_skipped(self):
+        individuals = {
+            "I01": make_individual(birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Joe /Smith/"),
+        }
+        self.assertEqual(check_us23_unique_name_and_birth(individuals), [])
 
 
 class TestMainIntegration(unittest.TestCase):
