@@ -310,23 +310,6 @@ def check_us10_marriage_after_14(individuals, families):
     return errors
 
 
-# US21 (Kendall)
-def check_us21_correct_gender(individuals, families):
-    # US21: the husband in a family must be male and the wife must be female.
-    errors = []
-    for fam_id in sorted(families, key=sort_key):
-        fam = families[fam_id]
-        for role, key, expected in (("HUSB", "husband", "M"), ("WIFE", "wife", "F")):
-            indi_id = fam[key]
-            indi = individuals.get(indi_id)
-            if indi and indi["sex"] != expected:
-                errors.append(
-                    f"ERROR: FAMILY: US21: {fam_id}: {role} {indi_id} "
-                    f"has SEX {indi['sex'] or 'NA'}, expected {expected}"
-                )
-    return errors
-
-
 def marriage_end(fam, individuals):
     # The date a marriage stops blocking a new one: the divorce date, or
     # else the earlier spouse's death date, or None if still ongoing.
@@ -452,6 +435,23 @@ def check_us15_fewer_than_15_siblings(families):
     return errors
 
 
+# US21 (Kendall)
+def check_us21_correct_gender(individuals, families):
+    # US21: the husband in a family must be male and the wife must be female.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        for role, key, expected in (("HUSB", "husband", "M"), ("WIFE", "wife", "F")):
+            indi_id = fam[key]
+            indi = individuals.get(indi_id)
+            if indi and indi["sex"] != expected:
+                errors.append(
+                    f"ERROR: FAMILY: US21: {fam_id}: {role} {indi_id} "
+                    f"has SEX {indi['sex'] or 'NA'}, expected {expected}"
+                )
+    return errors
+
+
 def check_us22_unique_ids(indi_ids, fam_ids):
     # US22: all individual IDs must be unique, and all family IDs must be
     # unique. Takes every ID as it appeared in the file (including
@@ -512,6 +512,56 @@ def print_table(title, headers, rows):
     for row in rows:
         print(format_row(row))
 
+# Alexis
+def check_us29_listed_of_deceased(individuals):
+    dead = []
+
+    # each person
+    for indi_id in sorted(individuals, key=sort_key):
+        person = individuals[indi_id]
+
+        # if person has death date
+        death_date = person["death"]
+        if death_date != None:
+            dead.append(indi_id)
+
+    return dead
+
+# Alexis
+def check_us30_list_living_married(individuals, families):
+    living_married = []
+
+    # each person
+    for indi_id in sorted(individuals, key=sort_key):
+        person = individuals[indi_id]
+
+        # check if alive
+        if person["death"] == None:
+
+            # families
+            for fam_id in person["fams"]:
+                if fam_id in families:
+                    family = families[fam_id]
+
+                    # check if married and != divorced
+                    if family["married"] != None and family["divorced"] == None:
+
+
+                        if family["husband"] == indi_id:
+                            spouse_id = family["wife"]
+                        else:
+                            spouse_id = family["husband"]
+
+                        # if spouse real
+                        if spouse_id in individuals:
+                            spouse = individuals[spouse_id]
+
+                            # if spouse alive
+                            if spouse["death"] == None:
+                                living_married.append(indi_id)
+                                break
+
+    return living_married
 
 def main():
     if len(sys.argv) != 2:
@@ -661,10 +711,24 @@ def main():
     errors.extend(check_us22_unique_ids(indi_id_log, fam_id_log))
     errors.extend(check_us23_unique_name_and_birth(individuals))
 
+
     if errors:
         print("\nValidation Errors")
         for error in errors:
             print(error)
+
+    # LISTS
+    # US29 
+    dead = check_us29_listed_of_deceased(individuals)
+    print("\nUS29")
+    print("List Deceased")
+    print(dead)
+
+    # US30
+    living_married = check_us30_list_living_married(individuals, families)
+    print("\nUS30")
+    print("List Living Married")
+    print(living_married)
 
 
 if __name__ == "__main__":

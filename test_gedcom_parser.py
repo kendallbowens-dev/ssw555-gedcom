@@ -23,6 +23,8 @@ from gedcom_parser import (
     check_us21_correct_gender,
     check_us22_unique_ids,
     check_us23_unique_name_and_birth,
+    check_us29_listed_of_deceased,
+    check_us30_list_living_married,
     compute_age,
     format_date,
     format_id_set,
@@ -515,6 +517,116 @@ class TestUS23UniqueNameAndBirth(unittest.TestCase):
             "I02": make_individual(name="Joe /Smith/"),
         }
         self.assertEqual(check_us23_unique_name_and_birth(individuals), [])
+
+class TestUS29ListDeceased(unittest.TestCase):
+
+    # dead person
+    def test_dead(self):
+        individuals = {
+            "I1": {"death": date(2020, 10, 31)},
+            "I2": {"death": None}
+        }
+
+        result = check_us29_listed_of_deceased(individuals)
+        self.assertEqual(result, ["I1"])
+
+    # everyone alive
+    def test_all_alive(self):
+        individuals = {
+            "I1": {"death": None},
+            "I2": {"death": None}
+        }
+
+        result = check_us29_listed_of_deceased(individuals)
+        self.assertEqual(result, [])
+
+    # no individuals
+    def test_empty(self):
+        individuals = {}
+
+        result = check_us29_listed_of_deceased(individuals)
+        self.assertEqual(result, [])
+
+    # dead people are sorted by ID
+    def test_sorted(self):
+        individuals = {
+            "I10": {"death": date(2020, 10, 26)},
+            "I2": {"death": date(2020, 10, 26)}
+        }
+
+        result = check_us29_listed_of_deceased(individuals)
+        self.assertEqual(result, ["I2", "I10"])
+
+
+
+class TestUS30ListLivingMarried(unittest.TestCase):
+    # married
+    def test_married(self):
+        individuals = {
+            "I1": {"death": None, "fams": {"F1"}},
+            "I2": {"death": None, "fams": {"F1"}}
+        }
+
+        families = {
+            "F1": {
+                "married": date(2001, 5, 21),
+                "divorced": None,
+                "husband": "I1", 
+                "wife": "I2"
+            }
+        }
+
+        result = check_us30_list_living_married(individuals, families)
+        self.assertEqual(result, ["I1", "I2"])
+
+    # divorced
+    def test_divorced(self):
+        individuals = {
+            "I1": {"death": None, "fams": {"F1"}},
+            "I2": {"death": None, "fams": {"F1"}}
+        }
+
+        families = {
+            "F1": {
+                "married": date(2001, 5, 21),
+                "divorced": date(2026, 5, 21),
+                "husband": "I1", 
+                "wife": "I2"
+            }
+        }
+
+        result = check_us30_list_living_married(individuals, families)
+        self.assertEqual(result, [])
+
+    # widow
+    def test_widow(self):
+        individuals = {
+            "I1": {"death": date(2022, 10, 10), "fams": {"F1"}},
+            "I2": {"death": None, "fams": {"F1"}}
+        }
+
+        families = {
+            "F1":{
+                "married": date(2001, 10, 10),
+                "divorced": None,
+                "husband": "I1",
+                "wife": "I2"
+            }
+        }
+
+        result = check_us30_list_living_married(individuals, families)
+        self.assertEqual(result, [])
+
+    # single person
+    def test_single(self):
+        individuals = {
+            "I1": {"death": None, "fams": set()}
+        }
+
+        result = check_us30_list_living_married(individuals, {})
+        self.assertEqual(result, [])
+
+
 
 
 class TestMainIntegration(unittest.TestCase):
