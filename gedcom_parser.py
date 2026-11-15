@@ -497,6 +497,115 @@ def check_us23_unique_name_and_birth(individuals):
     return errors
 
 
+# US17 (Koko)
+def descendants_of(indi_id, individuals, families):
+    # Every descendant of indi_id: their children, their children's children,
+    # and so on. indi_id itself is not included. The result set doubles as the
+    # visited set, so malformed cyclic data cannot cause an infinite loop.
+    result = set()
+    stack = [indi_id]
+    while stack:
+        current = stack.pop()
+        indi = individuals.get(current)
+        if not indi:
+            continue
+        for fam_id in indi["fams"]:
+            fam = families.get(fam_id)
+            if not fam:
+                continue
+            for child_id in fam["children"]:
+                if child_id not in result:
+                    result.add(child_id)
+                    stack.append(child_id)
+    return result
+
+
+def check_us17_no_marriage_to_descendants(individuals, families):
+    # US17: parents should not marry any of their descendants.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        husband = fam["husband"]
+        wife = fam["wife"]
+        if not husband or not wife:
+            continue
+        if wife in descendants_of(husband, individuals, families):
+            errors.append(
+                f"ERROR: FAMILY: US17: {fam_id}: Wife {wife} is a descendant of "
+                f"her spouse {husband}"
+            )
+        if husband in descendants_of(wife, individuals, families):
+            errors.append(
+                f"ERROR: FAMILY: US17: {fam_id}: Husband {husband} is a descendant of "
+                f"her spouse {wife}"
+            )
+    return errors
+
+
+# US20 (Koko)
+def parents_of(indi_id, individuals, families):
+    # The husband and wife of every family indi_id is a child in.
+    parents = set()
+    indi = individuals.get(indi_id)
+    if not indi:
+        return parents
+    for fam_id in indi["famc"]:
+        fam = families.get(fam_id)
+        if not fam:
+            continue
+        if fam["husband"]:
+            parents.add(fam["husband"])
+        if fam["wife"]:
+            parents.add(fam["wife"])
+    return parents
+
+
+def siblings_of(indi_id, individuals, families):
+    # Every other child in the family (or families) indi_id is a child in.
+    siblings = set()
+    indi = individuals.get(indi_id)
+    if not indi:
+        return siblings
+    for fam_id in indi["famc"]:
+        fam = families.get(fam_id)
+        if not fam:
+            continue
+        for child_id in fam["children"]:
+            if child_id != indi_id:
+                siblings.add(child_id)
+    return siblings
+
+
+def aunts_and_uncles_of(indi_id, individuals, families):
+    # An aunt or uncle is a sibling of one of indi_id's parents.
+    result = set()
+    for parent_id in parents_of(indi_id, individuals, families):
+        result |= siblings_of(parent_id, individuals, families)
+    return result
+
+
+def check_us20_aunts_and_uncles(individuals, families):
+    # US20: aunts and uncles should not marry their nieces or nephews.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        husband = fam["husband"]
+        wife = fam["wife"]
+        if not husband or not wife:
+            continue
+        if husband in aunts_and_uncles_of(wife, individuals, families):
+            errors.append(
+                f"ERROR: FAMILY: US20: {fam_id}: Husband {husband} is an aunt or "
+                f"uncle of wife {wife}"
+            )
+        if wife in aunts_and_uncles_of(husband, individuals, families):
+            errors.append(
+                f"ERROR: FAMILY: US20: {fam_id}: Wife {wife} is an aunt or "
+                f"uncle of husband {husband}"
+            )
+    return errors
+
+
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
     for row in rows:
@@ -707,6 +816,8 @@ def main():
     errors.extend(check_us13_siblings_spacing(individuals, families))
     errors.extend(check_us14_multiple_births(individuals, families))
     errors.extend(check_us15_fewer_than_15_siblings(families))
+    errors.extend(check_us17_no_marriage_to_descendants(individuals, families))
+    errors.extend(check_us20_aunts_and_uncles(individuals, families))
     errors.extend(check_us21_correct_gender(individuals, families))
     errors.extend(check_us22_unique_ids(indi_id_log, fam_id_log))
     errors.extend(check_us23_unique_name_and_birth(individuals))
