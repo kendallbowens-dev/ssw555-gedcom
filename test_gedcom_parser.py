@@ -23,6 +23,8 @@ from gedcom_parser import (
     check_us21_correct_gender,
     check_us22_unique_ids,
     check_us23_unique_name_and_birth,
+    check_us24_unique_families_by_spouses,
+    check_us25_unique_first_names_in_families,
     check_us29_listed_of_deceased,
     check_us30_list_living_married,
     compute_age,
@@ -517,6 +519,104 @@ class TestUS23UniqueNameAndBirth(unittest.TestCase):
             "I02": make_individual(name="Joe /Smith/"),
         }
         self.assertEqual(check_us23_unique_name_and_birth(individuals), [])
+
+class TestUS24UniqueFamiliesBySpouses(unittest.TestCase):
+    def test_duplicate_family_flagged(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/"),
+            "I02": make_individual(name="Jane /Smith/"),
+            "I03": make_individual(name="Joe /Smith/"),
+            "I04": make_individual(name="Jane /Smith/"),
+        }
+        families = {
+            "F01": make_family(married=date(2000, 1, 1), husband="I01", wife="I02"),
+            "F02": make_family(married=date(2000, 1, 1), husband="I03", wife="I04"),
+        }
+        errors = check_us24_unique_families_by_spouses(individuals, families)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("F02", errors[0])
+
+    def test_same_spouses_reversed_roles_flagged(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/"),
+            "I02": make_individual(name="Jane /Smith/"),
+        }
+        families = {
+            "F01": make_family(married=date(2000, 1, 1), husband="I01", wife="I02"),
+            "F02": make_family(married=date(2000, 1, 1), husband="I02", wife="I01"),
+        }
+        errors = check_us24_unique_families_by_spouses(individuals, families)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("F02", errors[0])
+
+    def test_different_marriage_date_clean(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/"),
+            "I02": make_individual(name="Jane /Smith/"),
+            "I03": make_individual(name="Joe /Smith/"),
+            "I04": make_individual(name="Jane /Smith/"),
+        }
+        families = {
+            "F01": make_family(married=date(2000, 1, 1), husband="I01", wife="I02"),
+            "F02": make_family(married=date(2005, 1, 1), husband="I03", wife="I04"),
+        }
+        self.assertEqual(check_us24_unique_families_by_spouses(individuals, families), [])
+
+    def test_missing_marriage_date_skipped(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/"),
+            "I02": make_individual(name="Jane /Smith/"),
+        }
+        families = {
+            "F01": make_family(husband="I01", wife="I02"),
+        }
+        self.assertEqual(check_us24_unique_families_by_spouses(individuals, families), [])
+
+
+class TestUS25UniqueFirstNamesInFamilies(unittest.TestCase):
+    def test_matching_child_name_and_birth_flagged(self):
+        individuals = {
+            "I01": make_individual(name="Twin /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Twin /Smith/", birth=date(2000, 1, 1)),
+        }
+        families = {
+            "F01": make_family(children=["I01", "I02"]),
+        }
+        errors = check_us25_unique_first_names_in_families(individuals, families)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("I02", errors[0])
+
+    def test_different_families_not_compared(self):
+        individuals = {
+            "I01": make_individual(name="Twin /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Twin /Smith/", birth=date(2000, 1, 1)),
+        }
+        families = {
+            "F01": make_family(children=["I01"]),
+            "F02": make_family(children=["I02"]),
+        }
+        self.assertEqual(check_us25_unique_first_names_in_families(individuals, families), [])
+
+    def test_same_name_different_birth_clean(self):
+        individuals = {
+            "I01": make_individual(name="Joe /Smith/", birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Joe /Smith/", birth=date(2001, 1, 1)),
+        }
+        families = {
+            "F01": make_family(children=["I01", "I02"]),
+        }
+        self.assertEqual(check_us25_unique_first_names_in_families(individuals, families), [])
+
+    def test_missing_name_or_birth_skipped(self):
+        individuals = {
+            "I01": make_individual(birth=date(2000, 1, 1)),
+            "I02": make_individual(name="Joe /Smith/"),
+        }
+        families = {
+            "F01": make_family(children=["I01", "I02"]),
+        }
+        self.assertEqual(check_us25_unique_first_names_in_families(individuals, families), [])
+
 
 class TestUS29ListDeceased(unittest.TestCase):
 
