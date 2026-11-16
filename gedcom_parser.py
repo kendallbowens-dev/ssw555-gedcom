@@ -722,6 +722,54 @@ def check_us30_list_living_married(individuals, families):
 
     return living_married
 
+# Alexis
+def check_us31_list_living_single(individuals):
+    single_living = []
+
+    for indi_id in sorted(individuals, key=sort_key):
+        person = individuals[indi_id]
+        age = compute_age(person["birth"], person["death"])
+
+        if person["death"] == None:
+            if age != "NA":
+                if age > 30:
+                    if len(person["fams"]) == 0:
+                        single_living.append(indi_id)
+
+    return single_living
+
+
+
+# Alexis
+def check_us32_list_multiple_births(individuals, families):
+    multiple_births = []
+
+    for fam_id in sorted(families, key = sort_key):
+        family = families[fam_id]
+        birthdays = {}
+
+        for child_id in family["children"]:
+            if child_id in individuals:            
+                child = individuals[child_id]
+
+                birth = child["birth"]
+
+                if birth != None:
+                    if birth not in birthdays:
+                        birthdays[birth] = []
+
+                    birthdays[birth].append(child_id)
+
+        for birth in birthdays:
+            if len(birthdays[birth]) > 1:
+                children = sorted(birthdays[birth], key=sort_key)
+                multiple_births.append((fam_id, children))
+
+    return multiple_births
+
+                       
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python3 gedcom_parser.py <gedcom_file>")
@@ -892,6 +940,18 @@ def main():
     print("\nUS30")
     print("List Living Married")
     print(living_married)
+
+    # US31
+    single_living = check_us31_list_living_single(individuals)
+    print("\nUS31")
+    print("List Living Single")
+    print(single_living)
+
+    # US32
+    multiple_births = check_us32_list_multiple_births(individuals, families)
+    print("\nUS32")
+    print("List Multiple Births")
+    print(multiple_births)
 
 
 if __name__ == "__main__":

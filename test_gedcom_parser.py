@@ -27,6 +27,8 @@ from gedcom_parser import (
     check_us25_unique_first_names_in_families,
     check_us29_listed_of_deceased,
     check_us30_list_living_married,
+    check_us31_list_living_single,
+    check_us32_list_multiple_births,
     compute_age,
     format_date,
     format_id_set,
@@ -725,6 +727,99 @@ class TestUS30ListLivingMarried(unittest.TestCase):
 
         result = check_us30_list_living_married(individuals, {})
         self.assertEqual(result, [])
+
+
+
+class TestUS31ListLivingSingle(unittest.TestCase):
+
+    # over 30
+    def test_over_30(self):
+        individuals = {
+            "I1": make_individual(birth = date(1990, 5, 21))
+        }
+
+        self.assertEqual(check_us31_list_living_single(individuals), ["I1"])
+
+    # under 30
+    def test_under_30(self):
+        individuals = {
+            "I1": make_individual(birth = date(2001, 5, 21))
+        }
+
+        self.assertEqual(check_us31_list_living_single(individuals), [])
+
+    # married
+    def test_married(self):
+        individuals = {
+            "I1": make_individual(birth = date(1990, 5, 21), fams = ["F1"])
+        }
+
+        self.assertEqual(check_us31_list_living_single(individuals), [])
+
+    # dead
+    def test_dead(self):
+        individuals = {
+            "I1": make_individual(birth = date(1990, 5, 21), death = date(2020, 5, 21))
+        }
+
+        self.assertEqual(check_us31_list_living_single(individuals), [])
+
+class TestUS32ListMultipleBirths(unittest.TestCase):
+
+    def test_twins(self):
+        individuals = {
+            "I1": make_individual(birth = date(2001, 5, 21)),
+            "I2": make_individual(birth = date(2001, 5, 21))
+        }
+
+        families = {
+            "F1": make_family(children=["I1", "I2"])
+        }
+
+        result = check_us32_list_multiple_births(individuals, families)
+        self.assertEqual(result, [("F1", ["I1", "I2"])])
+
+    def test_triplets(self):
+        individuals = {
+            "I1": make_individual(birth = date(2001, 5, 21)),
+            "I2": make_individual(birth = date(2001, 5, 21)),
+            "I3": make_individual(birth = date(2001, 5, 21))
+        }
+        
+        families = {
+            "F1": make_family(children=["I1", "I2", "I3"])
+        }
+        
+        result = check_us32_list_multiple_births(individuals, families)
+        self.assertEqual(result, [("F1", ["I1", "I2", "I3"])])
+
+    def test_diff_birthdays(self):
+        individuals = {
+            "I1": make_individual(birth = date(2001, 5, 21)),
+            "I2": make_individual(birth = date(2001, 5, 22))
+        }
+
+        families = {
+            "F1": make_family(children=["I1", "I2"])
+        }
+
+        result = check_us32_list_multiple_births(individuals, families)
+        self.assertEqual(result, [])
+
+    def test_no_birthdays(self):
+        individuals = {
+            "I1": make_individual(),
+            "I2": make_individual()
+        }
+
+        families = {
+            "F1": make_family(children=["I1", "I2"])
+        }
+
+        result = check_us32_list_multiple_births(individuals, families)
+        self.assertEqual(result, [])
+
+
 
 
 
