@@ -5,6 +5,7 @@ from datetime import date
 from us12_us13 import check_us12_parents_not_too_old
 
 
+
 def indi(birth):
     return {"name": "", "sex": "", "birth": birth, "death": None, "famc": set(), "fams": set()}
 
