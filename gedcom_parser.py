@@ -497,6 +497,56 @@ def check_us23_unique_name_and_birth(individuals):
     return errors
 
 
+def check_us24_unique_families_by_spouses(individuals, families):
+    # US24: no more than one family should have the same spouses (by name)
+    # and the same marriage date.
+    errors = []
+    seen = {}
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        if not fam["married"]:
+            continue
+        husband = individuals.get(fam["husband"])
+        wife = individuals.get(fam["wife"])
+        husband_name = husband["name"] if husband else ""
+        wife_name = wife["name"] if wife else ""
+        if not husband_name or not wife_name:
+            continue
+        key = (frozenset((husband_name, wife_name)), fam["married"])
+        if key in seen:
+            errors.append(
+                f"ERROR: FAMILY: US24: {fam_id}: Has the same spouses "
+                f"('{husband_name}', '{wife_name}') and marriage date "
+                f"{format_date(fam['married'])} as family {seen[key]}"
+            )
+        else:
+            seen[key] = fam_id
+    return errors
+
+
+def check_us25_unique_first_names_in_families(individuals, families):
+    # US25: no more than one child in a family should share both the same
+    # name and the same birth date.
+    errors = []
+    for fam_id in sorted(families, key=sort_key):
+        fam = families[fam_id]
+        seen = {}
+        for child_id in sorted(fam["children"], key=sort_key):
+            child = individuals.get(child_id)
+            if not child or not child["name"] or not child["birth"]:
+                continue
+            key = (child["name"], child["birth"])
+            if key in seen:
+                errors.append(
+                    f"ERROR: FAMILY: US25: {fam_id}: Child {child_id} has the same name "
+                    f"'{child['name']}' and birth date {format_date(child['birth'])} "
+                    f"as child {seen[key]}"
+                )
+            else:
+                seen[key] = child_id
+    return errors
+
+
 def print_table(title, headers, rows):
     widths = [len(h) for h in headers]
     for row in rows:
@@ -710,6 +760,8 @@ def main():
     errors.extend(check_us21_correct_gender(individuals, families))
     errors.extend(check_us22_unique_ids(indi_id_log, fam_id_log))
     errors.extend(check_us23_unique_name_and_birth(individuals))
+    errors.extend(check_us24_unique_families_by_spouses(individuals, families))
+    errors.extend(check_us25_unique_first_names_in_families(individuals, families))
 
 
     if errors:
